@@ -1,0 +1,53 @@
+---
+galaxy_info:
+  role_name: os_customize
+  author: Grzegorz Franus
+  namespace: grzegorzfranus
+  description: >
+    Ansible role to customize basic Linux OS settings, banners, login scripts, and shell environment.
+  license: Apache-2.0
+  company: EWARE
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - "bookworm"
+        - "bullseye"
+      galaxy_tags:
+        - debian
+        - debian12
+        - debian11
+    - name: Ubuntu
+      versions:
+        - "noble"
+        - "jammy"
+      galaxy_tags:
+        - ubuntu
+        - ubuntu24
+        - ubuntu22
+    - name: Rocky
+      versions:
+        - "9.0"
+      galaxy_tags:
+        - rocky
+        - rocky9
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+      galaxy_tags:
+        - el
+        - el8
+        - el9
+
+  galaxy_tags:
+    - customize
+    - os
+    - login
+    - banner
+    - motd
+    - environment
+    - linux]
+
+dependencies: []

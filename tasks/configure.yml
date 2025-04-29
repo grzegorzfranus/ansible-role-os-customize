@@ -1,0 +1,81 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Configuration Tasks
+# =============================================================================
+# These tasks handle the configuration of OS customization, including banner,
+# login message, package installation, and timezone setup.
+#
+# Process:
+# 1. Deploy login banner
+# 2. Deploy login message script
+# 3. Install additional packages (optional)
+# 4. Configure system timezone (optional)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Deploy Login Banner
+# -----------------------------------------------------------------------------
+- name: "os_customize | configure | Deploy welcome banner"
+  become: true
+  ansible.builtin.template:
+    src: "templates/banner.j2"
+    dest: "{{ os_customize_welcome_banner_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+# -----------------------------------------------------------------------------
+# 2. Deploy Login Message Script
+# -----------------------------------------------------------------------------
+- name: "os_customize | configure | Deploy welcome message script"
+  become: true
+  ansible.builtin.template:
+    src: "templates/scripts/login_{{ ansible_facts['os_family'] | lower }}.sh.j2"
+    dest: "{{ os_customize_welcome_script_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+# -----------------------------------------------------------------------------
+# 3. Install Additional Packages (Optional)
+# -----------------------------------------------------------------------------
+- name: "os_customize | configure | Install additional packages"
+  become: true
+  ansible.builtin.package:
+    name: "{{ item }}"
+    update_cache: true
+    state: present
+  with_items: "{{ os_customize_additional_packages }}"
+  when: >
+    os_customize_configure_additional_packages | default(false)
+
+# -----------------------------------------------------------------------------
+# 4. Configure System Timezone (Optional)
+# -----------------------------------------------------------------------------
+- block:
+    - name: "os_customize | configure | Check if timezone is available"
+      ansible.builtin.shell: timedatectl list-timezones | grep -q "^{{ os_customize_timezone }}$"
+      register: timezone_available
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "os_customize | configure | Fail if timezone is not available"
+      ansible.builtin.fail:
+        msg: "The timezone {{ os_customize_timezone }} is not available on this system"
+      when: >
+        timezone_available.rc != 0
+
+    - name: "os_customize | configure | Set timezone"
+      community.general.timezone:
+        name: "{{ os_customize_timezone }}"
+      register: timezone_changed
+      become: true
+
+    - name: "os_customize | configure | Notify changes"
+      ansible.builtin.debug:
+        msg: "Timezone changed to {{ os_customize_timezone }}"
+      when: >
+        timezone_changed.changed
+  when: >
+    os_customize_configure_timezone | default(false)

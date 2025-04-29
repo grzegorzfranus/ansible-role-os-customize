@@ -1,0 +1,54 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Default Variables
+# =============================================================================
+# This file defines default configuration values for the OS Customize role.
+# These values can be overridden in your playbook or inventory.
+#
+# Sections:
+#   1. General Settings
+#   2. Timezone Configuration
+#   3. Additional Packages
+#   4. Welcome Message and Banner
+#   5. Bashrc Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. General Settings
+# -----------------------------------------------------------------------------
+# System administrator e-mail address (used in banners, notifications, etc.)
+os_customize_system_admin_mail: "admin@example.com"
+
+# -----------------------------------------------------------------------------
+# 2. Timezone Configuration
+# -----------------------------------------------------------------------------
+# Enable/disable timezone configuration
+os_customize_configure_timezone: false
+
+# Timezone to set on the system (e.g., "Europe/Warsaw")
+os_customize_timezone: "Europe/Warsaw"
+
+# -----------------------------------------------------------------------------
+# 3. Additional Packages
+# -----------------------------------------------------------------------------
+# Enable/disable installation of additional packages
+os_customize_configure_additional_packages: true
+
+# List of additional packages to install
+os_customize_additional_packages:
+  - bc
+  - vim
+  - nano
+  - htop
+
+# -----------------------------------------------------------------------------
+# 4. Welcome Message and Banner
+# -----------------------------------------------------------------------------
+# Enable/disable configuration of welcome message and login banner
+os_customize_configure_welcome_message: true
+
+# -----------------------------------------------------------------------------
+# 5. Bashrc Configuration
+# -----------------------------------------------------------------------------
+# Enable/disable configuration of .bashrc files
+os_customize_configure_bashrc: true

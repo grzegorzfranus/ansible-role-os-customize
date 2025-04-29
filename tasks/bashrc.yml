@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Bashrc Configuration Tasks
+# =============================================================================
+# These tasks manage the insertion of a standardized, colored, and safe block
+# into user and skeleton .bashrc files. The block provides color support,
+# useful aliases, and improved shell history settings.
+#
+# Process:
+# 1. Check if the Ansible-managed block is already present in each .bashrc file
+# 2. Insert the block if not present
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Check for Existing Ansible-Managed Block
+# -----------------------------------------------------------------------------
+- name: "os_customize | bashrc | Check if block is already inserted into file ({{ item }})"
+  become: true
+  ansible.builtin.lineinfile:
+    state: absent
+    path: "{{ item }}"
+    regexp: "{{ os_customize_bashrc_marker }}"
+  check_mode: true
+  changed_when: false 
+  register: _check_status_
+
+# -----------------------------------------------------------------------------
+# 2. Insert Ansible-Managed Block if Absent
+# -----------------------------------------------------------------------------
+- name: "os_customize | bashrc | Insert block into .bashrc file ({{ item }})"
+  become: true
+  ansible.builtin.blockinfile:
+    path: "{{ item }}"
+    block: |
+      #
+      # Enable colors
+      export LS_OPTIONS='--color=auto'
+      eval "$(dircolors)"
+      #
+      # Configure some aliases
+      alias ll='ls $LS_OPTIONS -ltrha'
+      alias ls='ls $LS_OPTIONS'
+      alias l='ls $LS_OPTIONS -lA'
+      alias rm='rm -i'
+      alias cp='cp -i'
+      alias mv='mv -i'
+      #
+      # Logging options
+      HISTSIZE=10000
+      HISTFILESIZE=20000
+      HISTTIMEFORMAT="%h %d %H:%M:%S "
+      HISTIGNORE="ls:ps:top:uptime"
+      shopt -s cmdhist
+    marker: "{{ os_customize_bashrc_marker }}"
+  when: >
+    _check_status_.found == 0

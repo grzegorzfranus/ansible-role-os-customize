@@ -1,0 +1,21 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Common Variables
+# =============================================================================
+# This file defines variables common to all supported platforms.
+# OS-specific variables are defined in their respective files.
+#
+# Sections:
+#   1. Bashrc Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Bashrc Configuration
+# -----------------------------------------------------------------------------
+# Marker used to identify Ansible-managed blocks in .bashrc files
+os_customize_bashrc_marker: "# BEGIN ANSIBLE MANAGED BLOCK"
+
+# List of .bashrc files to manage by default
+os_customize_bashrc_list:
+  - /root/.bashrc
+  - /etc/skel/.bashrc

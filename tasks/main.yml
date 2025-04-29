@@ -1,0 +1,79 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Main Tasks
+# =============================================================================
+# This is the main task file for the OS Customize role. It orchestrates the execution
+# of all role components in the correct order. Each task is tagged appropriately
+# to allow for selective execution.
+#
+# Flow:
+# 1. Load OS-specific variables
+# 2. Validate role variables and requirements
+# 3. Configure system (banner, login, timezone, packages)
+# 4. Configure .bashrc files (optional)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. OS-Specific Variables
+# -----------------------------------------------------------------------------
+- name: os_customize | include_vars | Gather OS specific variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags:
+    - always
+    - setup
+    - init
+
+# -----------------------------------------------------------------------------
+# 2. Variable Validation
+# -----------------------------------------------------------------------------
+- name: os_customize | assert | Validate role variables and requirements
+  ansible.builtin.import_tasks: assert.yml
+  run_once: true
+  delegate_to: localhost
+  tags:
+    - always
+    - validate
+    - check
+
+# -----------------------------------------------------------------------------
+# 3. System Configuration
+# -----------------------------------------------------------------------------
+- name: os_customize | configure | Configure system (banner, login, timezone, packages)
+  ansible.builtin.include_tasks: configure.yml
+  tags:
+    - always
+    - configure
+
+# -----------------------------------------------------------------------------
+# 4. Bashrc Configuration (Optional)
+# -----------------------------------------------------------------------------
+- block:
+    - name: os_customize | bashrc | Find .bashrc files in /home directory
+      ansible.builtin.find:
+        paths: "/home/"
+        patterns: ".bashrc"
+        recurse: true
+        hidden: true
+        depth: 2
+      register: _found_files_
+
+    - name: os_customize | bashrc | Configure .bashrc files
+      ansible.builtin.include_tasks: bashrc.yml
+      with_items: "{{ os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
+  when: >
+    os_customize_configure_bashrc | default(false)
+  tags:
+    - configure
+    - bashrc

@@ -1,0 +1,81 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Assertions
+# =============================================================================
+# This file contains assertions to validate all role variables before execution.
+# These checks ensure that the provided variable values are of the correct type
+# and within valid ranges/options, preventing runtime errors.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. General Settings
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_system_admin_mail is defined and valid
+  assert:
+    that:
+      - os_customize_system_admin_mail is defined
+      - os_customize_system_admin_mail is string
+      - os_customize_system_admin_mail | length > 0
+    quiet: true
+    fail_msg: "os_customize_system_admin_mail must be a non-empty string (e-mail address)"
+
+# -----------------------------------------------------------------------------
+# 2. Timezone Configuration
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_configure_timezone is defined and boolean
+  assert:
+    that:
+      - os_customize_configure_timezone is defined
+      - os_customize_configure_timezone in [true, false]
+    quiet: true
+    fail_msg: "os_customize_configure_timezone must be a boolean (true/false)"
+
+- name: os_customize_assert | Test if os_customize_timezone is defined and valid
+  assert:
+    that:
+      - os_customize_timezone is defined
+      - os_customize_timezone is string
+      - os_customize_timezone | length > 0
+    quiet: true
+    fail_msg: "os_customize_timezone must be a non-empty string (e.g., 'Europe/Warsaw')"
+
+# -----------------------------------------------------------------------------
+# 3. Additional Packages
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_configure_additional_packages is defined and boolean
+  assert:
+    that:
+      - os_customize_configure_additional_packages is defined
+      - os_customize_configure_additional_packages in [true, false]
+    quiet: true
+    fail_msg: "os_customize_configure_additional_packages must be a boolean (true/false)"
+
+- name: os_customize_assert | Test if os_customize_additional_packages is defined and is a list
+  assert:
+    that:
+      - os_customize_additional_packages is defined
+      - os_customize_additional_packages is iterable
+    quiet: true
+    fail_msg: "os_customize_additional_packages must be a list of package names"
+
+# -----------------------------------------------------------------------------
+# 4. Welcome Message and Banner
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_configure_welcome_message is defined and boolean
+  assert:
+    that:
+      - os_customize_configure_welcome_message is defined
+      - os_customize_configure_welcome_message in [true, false]
+    quiet: true
+    fail_msg: "os_customize_configure_welcome_message must be a boolean (true/false)"
+
+# -----------------------------------------------------------------------------
+# 5. Bashrc Configuration
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_configure_bashrc is defined and boolean
+  assert:
+    that:
+      - os_customize_configure_bashrc is defined
+      - os_customize_configure_bashrc in [true, false]
+    quiet: true
+    fail_msg: "os_customize_configure_bashrc must be a boolean (true/false)"
