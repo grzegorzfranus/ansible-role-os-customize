@@ -79,3 +79,44 @@
       - os_customize_configure_bashrc in [true, false]
     quiet: true
     fail_msg: "os_customize_configure_bashrc must be a boolean (true/false)"
+
+# -----------------------------------------------------------------------------
+# 6. MOTD News Configuration
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_disable_motd_news is defined and boolean
+  assert:
+    that:
+      - os_customize_disable_motd_news is defined
+      - os_customize_disable_motd_news in [true, false]
+    quiet: true
+    fail_msg: "os_customize_disable_motd_news must be a boolean (true/false)"
+
+# -----------------------------------------------------------------------------
+# 7. SSH User Group Configuration
+# -----------------------------------------------------------------------------
+- name: os_customize_assert | Test if os_customize_configure_ssh_group is defined and boolean
+  assert:
+    that:
+      - os_customize_configure_ssh_group is defined
+      - os_customize_configure_ssh_group in [true, false]
+    quiet: true
+    fail_msg: "os_customize_configure_ssh_group must be a boolean (true/false)"
+
+- name: os_customize_assert | Test if os_customize_ssh_group_name is defined and valid
+  assert:
+    that:
+      - os_customize_ssh_group_name is defined
+      - os_customize_ssh_group_name is string
+      - os_customize_ssh_group_name | length > 0
+    quiet: true
+    fail_msg: "os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
+
+- name: os_customize_assert | Test if os_customize_ssh_group_gid is defined and valid
+  assert:
+    that:
+      - os_customize_ssh_group_gid is defined
+      - os_customize_ssh_group_gid is number
+      - os_customize_ssh_group_gid >= 1000
+      - os_customize_ssh_group_gid <= 65534
+    quiet: true
+    fail_msg: "os_customize_ssh_group_gid must be a number between 1000 and 65534"

@@ -11,6 +11,8 @@
 #   3. Additional Packages
 #   4. Welcome Message and Banner
 #   5. Bashrc Configuration
+#   6. MOTD News Configuration
+#   7. SSH User Group Configuration
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -39,7 +41,6 @@ os_customize_additional_packages:
   - bc
   - vim
   - nano
-  - htop
 
 # -----------------------------------------------------------------------------
 # 4. Welcome Message and Banner
@@ -52,3 +53,21 @@ os_customize_configure_welcome_message: true
 # -----------------------------------------------------------------------------
 # Enable/disable configuration of .bashrc files
 os_customize_configure_bashrc: true
+
+# -----------------------------------------------------------------------------
+# 6. MOTD News Configuration
+# -----------------------------------------------------------------------------
+# Enable/disable disabling of motd-news.timer service
+os_customize_disable_motd_news: true
+
+# -----------------------------------------------------------------------------
+# 7. SSH User Group Configuration
+# -----------------------------------------------------------------------------
+# Enable/disable creation of a dedicated SSH users group
+os_customize_configure_ssh_group: true
+
+# Name of the SSH users group
+os_customize_ssh_group_name: "sshusers"
+
+# GID for the SSH users group (high number to avoid conflicts)
+os_customize_ssh_group_gid: 10000

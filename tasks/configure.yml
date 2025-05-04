@@ -3,13 +3,16 @@
 # Ansible Role: OS Customize - Configuration Tasks
 # =============================================================================
 # These tasks handle the configuration of OS customization, including banner,
-# login message, package installation, and timezone setup.
+# login message, package installation, timezone setup, service management,
+# and user group configuration.
 #
 # Process:
 # 1. Deploy login banner
 # 2. Deploy login message script
 # 3. Install additional packages (optional)
 # 4. Configure system timezone (optional)
+# 5. Disable motd-news.timer service (optional)
+# 6. Create SSH users group (optional)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -79,3 +82,38 @@
         timezone_changed.changed
   when: >
     os_customize_configure_timezone | default(false)
+
+# -----------------------------------------------------------------------------
+# 5. Disable MOTD News Service (Optional)
+# -----------------------------------------------------------------------------
+- name: "os_customize | configure | Check if motd-news.timer exists"
+  ansible.builtin.stat:
+    path: "/lib/systemd/system/motd-news.timer"
+  register: _motd_news_timer_
+  become: true
+  when: >
+    os_customize_disable_motd_news | default(false)
+
+- name: "os_customize | configure | Disable and stop motd-news.timer"
+  ansible.builtin.systemd:
+    name: motd-news.timer
+    state: stopped
+    enabled: false
+    masked: true
+  when: >
+    os_customize_disable_motd_news | default(false) and
+    _motd_news_timer_.stat.exists | default(false)
+  become: true
+
+# -----------------------------------------------------------------------------
+# 6. Create SSH Users Group (Optional)
+# -----------------------------------------------------------------------------
+- name: "os_customize | configure | Create dedicated SSH users group"
+  ansible.builtin.group:
+    name: "{{ os_customize_ssh_group_name }}"
+    gid: "{{ os_customize_ssh_group_gid }}"
+    state: present
+    system: false
+  when: >
+    os_customize_configure_ssh_group | default(false)
+  become: true

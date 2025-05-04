@@ -9,7 +9,7 @@
 # Flow:
 # 1. Load OS-specific variables
 # 2. Validate role variables and requirements
-# 3. Configure system (banner, login, timezone, packages)
+# 3. Configure system (banner, login, timezone, packages, services, groups)
 # 4. Configure .bashrc files (optional)
 # =============================================================================
 
@@ -50,11 +50,12 @@
 # -----------------------------------------------------------------------------
 # 3. System Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize | configure | Configure system (banner, login, timezone, packages)
+- name: os_customize | configure | Configure system (banner, login, timezone, packages, services, groups)
   ansible.builtin.include_tasks: configure.yml
   tags:
     - always
     - configure
+    - services
 
 # -----------------------------------------------------------------------------
 # 4. Bashrc Configuration (Optional)

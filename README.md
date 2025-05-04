@@ -13,6 +13,8 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - Configure login banner with EWARE-themed ASCII art
 - Deploy customized welcome message scripts for both Debian and RHEL-based systems
 - Standardize and enhance .bashrc for root, skeleton, and all users
+- Disable MOTD news service to prevent unwanted messages
+- Create a dedicated SSH users group for enhanced security and access control
 - Ensure robust variable validation and idempotency
 - OS-specific configuration handling
 
@@ -58,6 +60,10 @@ All variables for this role are declared in:
 | `os_customize_additional_packages` | List of additional packages to install | `[bc, vim, nano, htop]` |
 | `os_customize_configure_welcome_message` | Enable/disable configuration of welcome message and login banner | `true` |
 | `os_customize_configure_bashrc` | Enable/disable configuration of .bashrc files | `true` |
+| `os_customize_disable_motd_news` | Enable/disable disabling of motd-news.timer service | `true` |
+| `os_customize_configure_ssh_group` | Enable/disable creation of a dedicated SSH users group | `true` |
+| `os_customize_ssh_group_name` | Name of the SSH users group | `sshusers` |
+| `os_customize_ssh_group_gid` | GID for the SSH users group | `59876` |
 
 ### Banner and Welcome Message Options
 
@@ -87,7 +93,7 @@ ansible-role-os-customize/
 ├── tasks/
 │   ├── main.yml             # Main task orchestration
 │   ├── assert.yml           # Variable validation
-│   ├── configure.yml        # System configuration tasks
+│   ├── configure.yml        # System configuration and services tasks
 │   └── bashrc.yml           # .bashrc configuration
 ├── templates/
 │   ├── banner.j2            # EWARE-themed ASCII login banner
@@ -105,7 +111,8 @@ ansible-role-os-customize/
 - `init` - Initial setup tasks
 - `validate` - Variable validation tasks
 - `check` - Validation and verification tasks
-- `configure` - System configuration tasks (banner, login, timezone, packages)
+- `configure` - System configuration tasks (banner, login, timezone, packages, services)
+- `services` - Service configuration tasks (MOTD news, SSH group)
 - `bashrc` - .bashrc configuration tasks
 
 ## Example Playbooks
@@ -165,6 +172,11 @@ ansible-role-os-customize/
         
         # Enable .bashrc customization
         os_customize_configure_bashrc: true
+        
+        # Configure SSH access security
+        os_customize_configure_ssh_group: true
+        os_customize_ssh_group_name: "ssh-access"
+        os_customize_ssh_group_gid: 59888
 ```
 
 ## Variable Validation
