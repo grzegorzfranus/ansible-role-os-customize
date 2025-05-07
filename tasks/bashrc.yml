@@ -6,7 +6,7 @@
 # into user and skeleton .bashrc files. The block provides color support,
 # useful aliases, and improved shell history settings.
 #
-# Process:
+# Flow:
 # 1. Check if the Ansible-managed block is already present in each .bashrc file
 # 2. Insert the block if not present
 # =============================================================================
@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # 1. Check for Existing Ansible-Managed Block
 # -----------------------------------------------------------------------------
-- name: "os_customize | bashrc | Check if block is already inserted into file ({{ item }})"
+- name: OS_Customize | lineinfile | Check for existing managed block
   become: true
   ansible.builtin.lineinfile:
     state: absent
@@ -27,7 +27,7 @@
 # -----------------------------------------------------------------------------
 # 2. Insert Ansible-Managed Block if Absent
 # -----------------------------------------------------------------------------
-- name: "os_customize | bashrc | Insert block into .bashrc file ({{ item }})"
+- name: OS_Customize | blockinfile | Insert configuration block
   become: true
   ansible.builtin.blockinfile:
     path: "{{ item }}"

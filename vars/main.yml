@@ -2,8 +2,8 @@
 # =============================================================================
 # Ansible Role: OS Customize - Common Variables
 # =============================================================================
-# This file defines variables common to all supported platforms.
-# OS-specific variables are defined in their respective files.
+# This file defines common variables shared across all distributions.
+# These values are distribution-agnostic and apply to all supported systems.
 #
 # Sections:
 #   1. Bashrc Configuration

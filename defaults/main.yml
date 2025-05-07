@@ -18,6 +18,8 @@
 # -----------------------------------------------------------------------------
 # 1. General Settings
 # -----------------------------------------------------------------------------
+# Role execution control and basic service configuration
+
 # System administrator e-mail address (used in banners, notifications, etc.)
 os_customize_system_admin_mail: "admin@example.com"
 

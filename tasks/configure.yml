@@ -6,7 +6,7 @@
 # login message, package installation, timezone setup, service management,
 # and user group configuration.
 #
-# Process:
+# Flow:
 # 1. Deploy login banner
 # 2. Deploy login message script
 # 3. Install additional packages (optional)
@@ -18,7 +18,7 @@
 # -----------------------------------------------------------------------------
 # 1. Deploy Login Banner
 # -----------------------------------------------------------------------------
-- name: "os_customize | configure | Deploy welcome banner"
+- name: OS_Customize | template | Deploy welcome banner
   become: true
   ansible.builtin.template:
     src: "templates/banner.j2"
@@ -30,7 +30,7 @@
 # -----------------------------------------------------------------------------
 # 2. Deploy Login Message Script
 # -----------------------------------------------------------------------------
-- name: "os_customize | configure | Deploy welcome message script"
+- name: OS_Customize | template | Deploy welcome message script
   become: true
   ansible.builtin.template:
     src: "templates/scripts/login_{{ ansible_facts['os_family'] | lower }}.sh.j2"
@@ -42,7 +42,7 @@
 # -----------------------------------------------------------------------------
 # 3. Install Additional Packages (Optional)
 # -----------------------------------------------------------------------------
-- name: "os_customize | configure | Install additional packages"
+- name: OS_Customize | package | Install additional packages
   become: true
   ansible.builtin.package:
     name: "{{ item }}"
@@ -56,26 +56,26 @@
 # 4. Configure System Timezone (Optional)
 # -----------------------------------------------------------------------------
 - block:
-    - name: "os_customize | configure | Check if timezone is available"
+    - name: OS_Customize | shell | Check if timezone is available
       ansible.builtin.shell: timedatectl list-timezones | grep -q "^{{ os_customize_timezone }}$"
       register: timezone_available
       changed_when: false
       failed_when: false
       check_mode: false
 
-    - name: "os_customize | configure | Fail if timezone is not available"
+    - name: OS_Customize | fail | Fail if timezone is not available
       ansible.builtin.fail:
         msg: "The timezone {{ os_customize_timezone }} is not available on this system"
       when: >
         timezone_available.rc != 0
 
-    - name: "os_customize | configure | Set timezone"
+    - name: OS_Customize | timezone | Set system timezone
       community.general.timezone:
         name: "{{ os_customize_timezone }}"
       register: timezone_changed
       become: true
 
-    - name: "os_customize | configure | Notify changes"
+    - name: OS_Customize | debug | Show timezone change notification
       ansible.builtin.debug:
         msg: "Timezone changed to {{ os_customize_timezone }}"
       when: >
@@ -86,7 +86,7 @@
 # -----------------------------------------------------------------------------
 # 5. Disable MOTD News Service (Optional)
 # -----------------------------------------------------------------------------
-- name: "os_customize | configure | Check if motd-news.timer exists"
+- name: OS_Customize | stat | Check if motd-news.timer exists
   ansible.builtin.stat:
     path: "/lib/systemd/system/motd-news.timer"
   register: _motd_news_timer_
@@ -94,7 +94,7 @@
   when: >
     os_customize_disable_motd_news | default(false)
 
-- name: "os_customize | configure | Disable and stop motd-news.timer"
+- name: OS_Customize | systemd | Disable and stop motd-news.timer
   ansible.builtin.systemd:
     name: motd-news.timer
     state: stopped
@@ -108,7 +108,7 @@
 # -----------------------------------------------------------------------------
 # 6. Create SSH Users Group (Optional)
 # -----------------------------------------------------------------------------
-- name: "os_customize | configure | Create dedicated SSH users group"
+- name: OS_Customize | group | Create dedicated SSH users group
   ansible.builtin.group:
     name: "{{ os_customize_ssh_group_name }}"
     gid: "{{ os_customize_ssh_group_gid }}"

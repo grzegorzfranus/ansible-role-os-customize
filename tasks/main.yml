@@ -16,7 +16,7 @@
 # -----------------------------------------------------------------------------
 # 1. OS-Specific Variables
 # -----------------------------------------------------------------------------
-- name: os_customize | include_vars | Gather OS specific variables
+- name: OS_Customize | include_vars | Load OS-specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -38,7 +38,7 @@
 # -----------------------------------------------------------------------------
 # 2. Variable Validation
 # -----------------------------------------------------------------------------
-- name: os_customize | assert | Validate role variables and requirements
+- name: OS_Customize | import_tasks | Execute variable validation
   ansible.builtin.import_tasks: assert.yml
   run_once: true
   delegate_to: localhost
@@ -50,7 +50,7 @@
 # -----------------------------------------------------------------------------
 # 3. System Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize | configure | Configure system (banner, login, timezone, packages, services, groups)
+- name: OS_Customize | include_tasks | Execute system configuration
   ansible.builtin.include_tasks: configure.yml
   tags:
     - always
@@ -61,7 +61,7 @@
 # 4. Bashrc Configuration (Optional)
 # -----------------------------------------------------------------------------
 - block:
-    - name: os_customize | bashrc | Find .bashrc files in /home directory
+    - name: OS_Customize | find | Locate .bashrc files in home directories
       ansible.builtin.find:
         paths: "/home/"
         patterns: ".bashrc"
@@ -70,7 +70,7 @@
         depth: 2
       register: _found_files_
 
-    - name: os_customize | bashrc | Configure .bashrc files
+    - name: OS_Customize | include_tasks | Execute bashrc configuration
       ansible.builtin.include_tasks: bashrc.yml
       with_items: "{{ os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
   when: >

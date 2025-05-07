@@ -5,12 +5,21 @@
 # This file contains assertions to validate all role variables before execution.
 # These checks ensure that the provided variable values are of the correct type
 # and within valid ranges/options, preventing runtime errors.
+#
+# Flow:
+# 1. General Settings validation
+# 2. Timezone Configuration validation
+# 3. Additional Packages validation
+# 4. Welcome Message and Banner validation
+# 5. Bashrc Configuration validation
+# 6. MOTD News Configuration validation
+# 7. SSH User Group Configuration validation
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # 1. General Settings
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_system_admin_mail is defined and valid
+- name: OS_Customize | assert | Validate system admin email
   assert:
     that:
       - os_customize_system_admin_mail is defined
@@ -22,7 +31,7 @@
 # -----------------------------------------------------------------------------
 # 2. Timezone Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_configure_timezone is defined and boolean
+- name: OS_Customize | assert | Validate timezone configuration flag
   assert:
     that:
       - os_customize_configure_timezone is defined
@@ -30,7 +39,7 @@
     quiet: true
     fail_msg: "os_customize_configure_timezone must be a boolean (true/false)"
 
-- name: os_customize_assert | Test if os_customize_timezone is defined and valid
+- name: OS_Customize | assert | Validate timezone value
   assert:
     that:
       - os_customize_timezone is defined
@@ -42,7 +51,7 @@
 # -----------------------------------------------------------------------------
 # 3. Additional Packages
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_configure_additional_packages is defined and boolean
+- name: OS_Customize | assert | Validate additional packages flag
   assert:
     that:
       - os_customize_configure_additional_packages is defined
@@ -50,7 +59,7 @@
     quiet: true
     fail_msg: "os_customize_configure_additional_packages must be a boolean (true/false)"
 
-- name: os_customize_assert | Test if os_customize_additional_packages is defined and is a list
+- name: OS_Customize | assert | Validate additional packages list
   assert:
     that:
       - os_customize_additional_packages is defined
@@ -61,7 +70,7 @@
 # -----------------------------------------------------------------------------
 # 4. Welcome Message and Banner
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_configure_welcome_message is defined and boolean
+- name: OS_Customize | assert | Validate welcome message flag
   assert:
     that:
       - os_customize_configure_welcome_message is defined
@@ -72,7 +81,7 @@
 # -----------------------------------------------------------------------------
 # 5. Bashrc Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_configure_bashrc is defined and boolean
+- name: OS_Customize | assert | Validate bashrc configuration flag
   assert:
     that:
       - os_customize_configure_bashrc is defined
@@ -83,7 +92,7 @@
 # -----------------------------------------------------------------------------
 # 6. MOTD News Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_disable_motd_news is defined and boolean
+- name: OS_Customize | assert | Validate MOTD news flag
   assert:
     that:
       - os_customize_disable_motd_news is defined
@@ -94,7 +103,7 @@
 # -----------------------------------------------------------------------------
 # 7. SSH User Group Configuration
 # -----------------------------------------------------------------------------
-- name: os_customize_assert | Test if os_customize_configure_ssh_group is defined and boolean
+- name: OS_Customize | assert | Validate SSH group flag
   assert:
     that:
       - os_customize_configure_ssh_group is defined
@@ -102,7 +111,7 @@
     quiet: true
     fail_msg: "os_customize_configure_ssh_group must be a boolean (true/false)"
 
-- name: os_customize_assert | Test if os_customize_ssh_group_name is defined and valid
+- name: OS_Customize | assert | Validate SSH group name
   assert:
     that:
       - os_customize_ssh_group_name is defined
@@ -111,7 +120,7 @@
     quiet: true
     fail_msg: "os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
 
-- name: os_customize_assert | Test if os_customize_ssh_group_gid is defined and valid
+- name: OS_Customize | assert | Validate SSH group GID
   assert:
     that:
       - os_customize_ssh_group_gid is defined
