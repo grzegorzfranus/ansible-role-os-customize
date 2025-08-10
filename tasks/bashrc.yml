@@ -14,20 +14,20 @@
 # -----------------------------------------------------------------------------
 # 1. Check for Existing Ansible-Managed Block
 # -----------------------------------------------------------------------------
-- name: OS_Customize | lineinfile | Check for existing managed block
+- name: "⚙️ OS Customize | lineinfile | Check for existing managed block"
   become: true
   ansible.builtin.lineinfile:
     state: absent
     path: "{{ item }}"
     regexp: "{{ os_customize_bashrc_marker }}"
   check_mode: true
-  changed_when: false 
+  changed_when: false
   register: _check_status_
 
 # -----------------------------------------------------------------------------
 # 2. Insert Ansible-Managed Block if Absent
 # -----------------------------------------------------------------------------
-- name: OS_Customize | blockinfile | Insert configuration block
+- name: "⚙️ OS Customize | blockinfile | Insert configuration block"
   become: true
   ansible.builtin.blockinfile:
     path: "{{ item }}"

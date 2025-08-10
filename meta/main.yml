@@ -48,6 +48,6 @@ galaxy_info:
     - banner
     - motd
     - environment
-    - linux]
+    - linux
 
 dependencies: []

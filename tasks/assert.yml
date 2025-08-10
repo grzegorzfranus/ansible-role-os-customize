@@ -19,113 +19,113 @@
 # -----------------------------------------------------------------------------
 # 1. General Settings
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate system admin email
-  assert:
+- name: "🧪 OS Customize | assert | Validate system admin email"
+  ansible.builtin.assert:
     that:
       - os_customize_system_admin_mail is defined
       - os_customize_system_admin_mail is string
       - os_customize_system_admin_mail | length > 0
-    quiet: true
-    fail_msg: "os_customize_system_admin_mail must be a non-empty string (e-mail address)"
+    fail_msg: "❌ os_customize_system_admin_mail must be a non-empty string (e-mail address)"
+    success_msg: "✅ System admin e-mail is valid: {{ os_customize_system_admin_mail }}"
 
 # -----------------------------------------------------------------------------
 # 2. Timezone Configuration
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate timezone configuration flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate timezone configuration flag"
+  ansible.builtin.assert:
     that:
       - os_customize_configure_timezone is defined
-      - os_customize_configure_timezone in [true, false]
-    quiet: true
-    fail_msg: "os_customize_configure_timezone must be a boolean (true/false)"
+      - os_customize_configure_timezone is boolean
+    fail_msg: "❌ os_customize_configure_timezone must be a boolean (true/false)"
+    success_msg: "✅ Timezone configuration flag is valid: {{ os_customize_configure_timezone }}"
 
-- name: OS_Customize | assert | Validate timezone value
-  assert:
+- name: "🧪 OS Customize | assert | Validate timezone value"
+  ansible.builtin.assert:
     that:
       - os_customize_timezone is defined
       - os_customize_timezone is string
       - os_customize_timezone | length > 0
-    quiet: true
-    fail_msg: "os_customize_timezone must be a non-empty string (e.g., 'Europe/Warsaw')"
+    fail_msg: "❌ os_customize_timezone must be a non-empty string (e.g., 'Europe/Warsaw')"
+    success_msg: "✅ Timezone value format is valid: {{ os_customize_timezone }}"
 
 # -----------------------------------------------------------------------------
 # 3. Additional Packages
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate additional packages flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate additional packages flag"
+  ansible.builtin.assert:
     that:
       - os_customize_configure_additional_packages is defined
-      - os_customize_configure_additional_packages in [true, false]
-    quiet: true
-    fail_msg: "os_customize_configure_additional_packages must be a boolean (true/false)"
+      - os_customize_configure_additional_packages is boolean
+    fail_msg: "❌ os_customize_configure_additional_packages must be a boolean (true/false)"
+    success_msg: "✅ Additional packages flag is valid: {{ os_customize_configure_additional_packages }}"
 
-- name: OS_Customize | assert | Validate additional packages list
-  assert:
+- name: "🧪 OS Customize | assert | Validate additional packages list"
+  ansible.builtin.assert:
     that:
       - os_customize_additional_packages is defined
-      - os_customize_additional_packages is iterable
-    quiet: true
-    fail_msg: "os_customize_additional_packages must be a list of package names"
+      - os_customize_additional_packages is sequence
+    fail_msg: "❌ os_customize_additional_packages must be a list of package names"
+    success_msg: "✅ Additional packages list is valid with {{ os_customize_additional_packages | length }} entries"
 
 # -----------------------------------------------------------------------------
 # 4. Welcome Message and Banner
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate welcome message flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate welcome message flag"
+  ansible.builtin.assert:
     that:
       - os_customize_configure_welcome_message is defined
-      - os_customize_configure_welcome_message in [true, false]
-    quiet: true
-    fail_msg: "os_customize_configure_welcome_message must be a boolean (true/false)"
+      - os_customize_configure_welcome_message is boolean
+    fail_msg: "❌ os_customize_configure_welcome_message must be a boolean (true/false)"
+    success_msg: "✅ Welcome message flag is valid: {{ os_customize_configure_welcome_message }}"
 
 # -----------------------------------------------------------------------------
 # 5. Bashrc Configuration
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate bashrc configuration flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate bashrc configuration flag"
+  ansible.builtin.assert:
     that:
       - os_customize_configure_bashrc is defined
-      - os_customize_configure_bashrc in [true, false]
-    quiet: true
-    fail_msg: "os_customize_configure_bashrc must be a boolean (true/false)"
+      - os_customize_configure_bashrc is boolean
+    fail_msg: "❌ os_customize_configure_bashrc must be a boolean (true/false)"
+    success_msg: "✅ Bashrc configuration flag is valid: {{ os_customize_configure_bashrc }}"
 
 # -----------------------------------------------------------------------------
 # 6. MOTD News Configuration
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate MOTD news flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate MOTD news flag"
+  ansible.builtin.assert:
     that:
       - os_customize_disable_motd_news is defined
-      - os_customize_disable_motd_news in [true, false]
-    quiet: true
-    fail_msg: "os_customize_disable_motd_news must be a boolean (true/false)"
+      - os_customize_disable_motd_news is boolean
+    fail_msg: "❌ os_customize_disable_motd_news must be a boolean (true/false)"
+    success_msg: "✅ MOTD news disable flag is valid: {{ os_customize_disable_motd_news }}"
 
 # -----------------------------------------------------------------------------
 # 7. SSH User Group Configuration
 # -----------------------------------------------------------------------------
-- name: OS_Customize | assert | Validate SSH group flag
-  assert:
+- name: "🧪 OS Customize | assert | Validate SSH group flag"
+  ansible.builtin.assert:
     that:
       - os_customize_configure_ssh_group is defined
-      - os_customize_configure_ssh_group in [true, false]
-    quiet: true
-    fail_msg: "os_customize_configure_ssh_group must be a boolean (true/false)"
+      - os_customize_configure_ssh_group is boolean
+    fail_msg: "❌ os_customize_configure_ssh_group must be a boolean (true/false)"
+    success_msg: "✅ SSH group configuration flag is valid: {{ os_customize_configure_ssh_group }}"
 
-- name: OS_Customize | assert | Validate SSH group name
-  assert:
+- name: "🧪 OS Customize | assert | Validate SSH group name"
+  ansible.builtin.assert:
     that:
       - os_customize_ssh_group_name is defined
       - os_customize_ssh_group_name is string
       - os_customize_ssh_group_name | length > 0
-    quiet: true
-    fail_msg: "os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
+    fail_msg: "❌ os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
+    success_msg: "✅ SSH group name is valid: {{ os_customize_ssh_group_name }}"
 
-- name: OS_Customize | assert | Validate SSH group GID
-  assert:
+- name: "🧪 OS Customize | assert | Validate SSH group GID"
+  ansible.builtin.assert:
     that:
       - os_customize_ssh_group_gid is defined
       - os_customize_ssh_group_gid is number
       - os_customize_ssh_group_gid >= 1000
       - os_customize_ssh_group_gid <= 65534
-    quiet: true
-    fail_msg: "os_customize_ssh_group_gid must be a number between 1000 and 65534"
+    fail_msg: "❌ os_customize_ssh_group_gid must be a number between 1000 and 65534"
+    success_msg: "✅ SSH group GID is valid: {{ os_customize_ssh_group_gid }}"

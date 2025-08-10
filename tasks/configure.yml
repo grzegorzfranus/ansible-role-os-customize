@@ -18,10 +18,10 @@
 # -----------------------------------------------------------------------------
 # 1. Deploy Login Banner
 # -----------------------------------------------------------------------------
-- name: OS_Customize | template | Deploy welcome banner
+- name: "⚙️ OS Customize | template | Deploy welcome banner"
   become: true
   ansible.builtin.template:
-    src: "templates/banner.j2"
+    src: "banner.j2"
     dest: "{{ os_customize_welcome_banner_path }}"
     owner: root
     group: root
@@ -30,10 +30,10 @@
 # -----------------------------------------------------------------------------
 # 2. Deploy Login Message Script
 # -----------------------------------------------------------------------------
-- name: OS_Customize | template | Deploy welcome message script
+- name: "⚙️ OS Customize | template | Deploy welcome message script"
   become: true
   ansible.builtin.template:
-    src: "templates/scripts/login_{{ ansible_facts['os_family'] | lower }}.sh.j2"
+    src: "scripts/login_{{ ansible_facts['os_family'] | lower }}.sh.j2"
     dest: "{{ os_customize_welcome_script_path }}"
     owner: root
     group: root
@@ -42,13 +42,12 @@
 # -----------------------------------------------------------------------------
 # 3. Install Additional Packages (Optional)
 # -----------------------------------------------------------------------------
-- name: OS_Customize | package | Install additional packages
+- name: "📦 OS Customize | package | Install additional packages"
   become: true
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ os_customize_additional_packages }}"
     update_cache: true
     state: present
-  with_items: "{{ os_customize_additional_packages }}"
   when: >
     os_customize_configure_additional_packages | default(false)
 
@@ -56,26 +55,26 @@
 # 4. Configure System Timezone (Optional)
 # -----------------------------------------------------------------------------
 - block:
-    - name: OS_Customize | shell | Check if timezone is available
+    - name: "🧪 OS Customize | shell | Check if timezone is available"
       ansible.builtin.shell: timedatectl list-timezones | grep -q "^{{ os_customize_timezone }}$"
       register: timezone_available
       changed_when: false
       failed_when: false
       check_mode: false
 
-    - name: OS_Customize | fail | Fail if timezone is not available
+    - name: "🧪 OS Customize | fail | Fail if timezone is not available"
       ansible.builtin.fail:
         msg: "The timezone {{ os_customize_timezone }} is not available on this system"
       when: >
         timezone_available.rc != 0
 
-    - name: OS_Customize | timezone | Set system timezone
+    - name: "⚙️ OS Customize | timezone | Set system timezone"
       community.general.timezone:
         name: "{{ os_customize_timezone }}"
       register: timezone_changed
       become: true
 
-    - name: OS_Customize | debug | Show timezone change notification
+    - name: "🔎 OS Customize | debug | Show timezone change notification"
       ansible.builtin.debug:
         msg: "Timezone changed to {{ os_customize_timezone }}"
       when: >
@@ -86,7 +85,7 @@
 # -----------------------------------------------------------------------------
 # 5. Disable MOTD News Service (Optional)
 # -----------------------------------------------------------------------------
-- name: OS_Customize | stat | Check if motd-news.timer exists
+- name: "🔎 OS Customize | stat | Check if motd-news.timer exists"
   ansible.builtin.stat:
     path: "/lib/systemd/system/motd-news.timer"
   register: _motd_news_timer_
@@ -94,7 +93,7 @@
   when: >
     os_customize_disable_motd_news | default(false)
 
-- name: OS_Customize | systemd | Disable and stop motd-news.timer
+- name: "🔄 OS Customize | systemd | Disable and stop motd-news.timer"
   ansible.builtin.systemd:
     name: motd-news.timer
     state: stopped
@@ -108,7 +107,7 @@
 # -----------------------------------------------------------------------------
 # 6. Create SSH Users Group (Optional)
 # -----------------------------------------------------------------------------
-- name: OS_Customize | group | Create dedicated SSH users group
+- name: "🔒 OS Customize | group | Create dedicated SSH users group"
   ansible.builtin.group:
     name: "{{ os_customize_ssh_group_name }}"
     gid: "{{ os_customize_ssh_group_gid }}"
