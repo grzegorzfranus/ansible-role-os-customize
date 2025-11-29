@@ -10,7 +10,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 
 - Set system timezone with validation
 - Install and manage additional packages with flexible configuration
-- Configure login banner with EWARE-themed ASCII art
+- Configure login banner with security warning message
 - Deploy customized welcome message scripts for both Debian and RHEL-based systems
 - Standardize and enhance .bashrc for root, skeleton, and all users
 - Disable MOTD news service to prevent unwanted messages
@@ -96,7 +96,7 @@ ansible-role-os-customize/
 │   ├── configure.yml        # System configuration and services tasks
 │   └── bashrc.yml           # .bashrc configuration
 ├── templates/
-│   ├── banner.j2            # EWARE-themed ASCII login banner
+│   ├── banner.j2            # Login banner with security warning
 │   └── scripts/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
