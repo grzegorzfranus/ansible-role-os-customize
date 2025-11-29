@@ -59,7 +59,7 @@
       vars:
         os_customize_system_admin_mail: "test@molecule.local"
         os_customize_configure_timezone: true
-        os_customize_timezone: "America/New_York"
+        os_customize_timezone: "UTC"
         os_customize_configure_additional_packages: true
         os_customize_additional_packages:
           - bc

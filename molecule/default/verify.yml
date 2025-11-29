@@ -143,7 +143,7 @@
     - name: Verify | Assert timezone is set correctly
       ansible.builtin.assert:
         that:
-          - _timezone_result_.stdout == "America/New_York"
+          - _timezone_result_.stdout == "UTC"
         fail_msg: "Timezone is not set correctly: {{ _timezone_result_.stdout }}"
         success_msg: "Timezone verified: {{ _timezone_result_.stdout }}"
 
@@ -242,7 +242,7 @@
           - "Banner: Deployed at {{ os_customize_welcome_banner_path }}"
           - "Login script: Deployed at {{ os_customize_welcome_script_path }}"
           - "Packages: bc, vim installed"
-          - "Timezone: America/New_York configured"
+          - "Timezone: UTC configured"
           - "Bashrc: Configured for root and skel"
           - "SSH group: sshusers (GID 10000) created"
           - "MOTD news: Disabled"

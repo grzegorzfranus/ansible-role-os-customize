@@ -4,12 +4,13 @@
 # This playbook prepares the test environment for Molecule testing.
 # It performs necessary system preparations before role execution:
 # - Fixes file permissions
+# - Installs required dependencies (tzdata)
 # - Validates system requirements
-# - Sets up required dependencies
 #
 # Flow:
 # 1. Fix system file permissions
-# 2. Validate system state
+# 2. Install timezone data
+# 3. Validate system state
 # =============================================================================
 
 ---
@@ -18,7 +19,7 @@
 # -----------------------------------------------------------------------------
 - name: molecule | Prepare
   hosts: all
-  gather_facts: false
+  gather_facts: true
 
   tasks:
     - name: Prepare | Fix /etc/shadow permissions
@@ -51,3 +52,21 @@
         mode: '0755'
         owner: root
         group: root
+
+# -----------------------------------------------------------------------------
+# 2. Install Timezone Data
+# -----------------------------------------------------------------------------
+    - name: Prepare | Install tzdata package (Debian)
+      ansible.builtin.apt:
+        name: tzdata
+        state: present
+        update_cache: true
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Install tzdata package (RedHat)
+      ansible.builtin.dnf:
+        name: tzdata
+        state: present
+      when: >
+        ansible_facts['os_family'] == "RedHat"

@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed 🔧
 - Fixed deprecated `ansible_os_family` and `ansible_service_mgr` variables in Molecule converge playbook.
-- Changed test timezone from `Europe/Warsaw` to `America/New_York` for better container compatibility.
+- Added tzdata package installation in Molecule prepare step for timezone support.
+- Changed test timezone to `UTC` for universal container compatibility.
 
 ## [1.0.1] - 2025-11-29
 
