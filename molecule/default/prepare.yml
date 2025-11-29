@@ -1,0 +1,53 @@
+# =============================================================================
+# Ansible Role: OS Customize - Molecule Preparation Playbook
+# =============================================================================
+# This playbook prepares the test environment for Molecule testing.
+# It performs necessary system preparations before role execution:
+# - Fixes file permissions
+# - Validates system requirements
+# - Sets up required dependencies
+#
+# Flow:
+# 1. Fix system file permissions
+# 2. Validate system state
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# 1. System File Permissions
+# -----------------------------------------------------------------------------
+- name: molecule | Prepare
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Prepare | Fix /etc/shadow permissions
+      register: etc_shadow
+      ansible.builtin.shell:
+        cmd: |
+          echo "Checking /etc/shadow permissions..."
+          ls -l /etc/shadow
+          chmod 0400 /etc/shadow
+          echo "Fixed /etc/shadow permissions:"
+          ls -l /etc/shadow
+          echo ""
+
+    - name: Prepare | Verify shadow file permissions
+      ansible.builtin.debug:
+        var: etc_shadow.stdout
+
+    - name: Prepare | Ensure profile.d directory exists
+      ansible.builtin.file:
+        path: /etc/profile.d
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Prepare | Ensure skel directory exists
+      ansible.builtin.file:
+        path: /etc/skel
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root

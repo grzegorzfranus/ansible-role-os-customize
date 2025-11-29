@@ -1,0 +1,249 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Molecule Verification Playbook
+# =============================================================================
+# This playbook verifies the OS customization applied by the role.
+# It performs comprehensive checks of:
+# - Welcome banner and login script deployment
+# - Package installation
+# - Timezone configuration
+# - Bashrc configuration
+# - SSH user group creation
+# - MOTD news service status
+#
+# Flow:
+# 1. Load variables and gather facts
+# 2. Verify banner and login script
+# 3. Verify package installation
+# 4. Verify timezone configuration
+# 5. Verify bashrc configuration
+# 6. Verify SSH group
+# 7. Verify MOTD news service
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Environment Setup
+# -----------------------------------------------------------------------------
+- name: molecule | Verify Role
+  hosts: all
+  gather_facts: true
+
+  vars_files:
+    - ../../defaults/main.yml
+    - ../../vars/main.yml
+
+  tasks:
+    - name: Verify | Gather OS specific variables
+      include_vars: "{{ lookup('first_found', params) }}"
+      vars:
+        params:
+          files:
+            - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+            - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+            - "{{ ansible_facts['distribution'] | lower }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}.yml"
+            - "main.yml"
+          paths:
+            - "../../vars"
+
+# -----------------------------------------------------------------------------
+# 2. Banner and Login Script Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if banner file exists
+      ansible.builtin.stat:
+        path: "{{ os_customize_welcome_banner_path }}"
+      register: _banner_result_
+
+    - name: Verify | Assert banner file exists
+      ansible.builtin.assert:
+        that:
+          - _banner_result_.stat.exists
+        fail_msg: "Banner file not found at {{ os_customize_welcome_banner_path }}"
+        success_msg: "Banner file verified at {{ os_customize_welcome_banner_path }}"
+
+    - name: Verify | Check banner file permissions
+      ansible.builtin.stat:
+        path: "{{ os_customize_welcome_banner_path }}"
+      register: _banner_perms_
+
+    - name: Verify | Assert banner file permissions
+      ansible.builtin.assert:
+        that:
+          - _banner_perms_.stat.mode == "0644"
+        fail_msg: "Banner file has incorrect permissions: {{ _banner_perms_.stat.mode }}"
+        success_msg: "Banner file permissions verified: {{ _banner_perms_.stat.mode }}"
+
+    - name: Verify | Check if login script exists
+      ansible.builtin.stat:
+        path: "{{ os_customize_welcome_script_path }}"
+      register: _script_result_
+
+    - name: Verify | Assert login script exists
+      ansible.builtin.assert:
+        that:
+          - _script_result_.stat.exists
+        fail_msg: "Login script not found at {{ os_customize_welcome_script_path }}"
+        success_msg: "Login script verified at {{ os_customize_welcome_script_path }}"
+
+    - name: Verify | Check banner content contains security warning
+      ansible.builtin.command:
+        cmd: grep -q "AUTHORIZED ACCESS ONLY" {{ os_customize_welcome_banner_path }}
+      register: _banner_content_
+      changed_when: false
+
+    - name: Verify | Assert banner contains security warning
+      ansible.builtin.assert:
+        that:
+          - _banner_content_.rc == 0
+        fail_msg: "Banner does not contain expected security warning"
+        success_msg: "Banner content verified with security warning"
+
+# -----------------------------------------------------------------------------
+# 3. Package Installation Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if bc package is installed
+      ansible.builtin.package:
+        name: bc
+        state: present
+      check_mode: true
+      register: _bc_package_
+
+    - name: Verify | Assert bc package is installed
+      ansible.builtin.assert:
+        that:
+          - not _bc_package_.changed
+        fail_msg: "Package 'bc' is not installed"
+        success_msg: "Package 'bc' verified as installed"
+
+    - name: Verify | Check if vim package is installed
+      ansible.builtin.package:
+        name: vim
+        state: present
+      check_mode: true
+      register: _vim_package_
+
+    - name: Verify | Assert vim package is installed
+      ansible.builtin.assert:
+        that:
+          - not _vim_package_.changed
+        fail_msg: "Package 'vim' is not installed"
+        success_msg: "Package 'vim' verified as installed"
+
+# -----------------------------------------------------------------------------
+# 4. Timezone Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Get current timezone
+      ansible.builtin.command:
+        cmd: timedatectl show --property=Timezone --value
+      register: _timezone_result_
+      changed_when: false
+
+    - name: Verify | Assert timezone is set correctly
+      ansible.builtin.assert:
+        that:
+          - _timezone_result_.stdout == "Europe/Warsaw"
+        fail_msg: "Timezone is not set correctly: {{ _timezone_result_.stdout }}"
+        success_msg: "Timezone verified: {{ _timezone_result_.stdout }}"
+
+# -----------------------------------------------------------------------------
+# 5. Bashrc Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if root bashrc contains managed block
+      ansible.builtin.command:
+        cmd: grep -q "BEGIN ANSIBLE MANAGED BLOCK" /root/.bashrc
+      register: _root_bashrc_
+      changed_when: false
+
+    - name: Verify | Assert root bashrc contains managed block
+      ansible.builtin.assert:
+        that:
+          - _root_bashrc_.rc == 0
+        fail_msg: "Root bashrc does not contain Ansible managed block"
+        success_msg: "Root bashrc configuration verified"
+
+    - name: Verify | Check if skel bashrc contains managed block
+      ansible.builtin.command:
+        cmd: grep -q "BEGIN ANSIBLE MANAGED BLOCK" /etc/skel/.bashrc
+      register: _skel_bashrc_
+      changed_when: false
+
+    - name: Verify | Assert skel bashrc contains managed block
+      ansible.builtin.assert:
+        that:
+          - _skel_bashrc_.rc == 0
+        fail_msg: "Skel bashrc does not contain Ansible managed block"
+        success_msg: "Skel bashrc configuration verified"
+
+# -----------------------------------------------------------------------------
+# 6. SSH Group Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if SSH users group exists
+      ansible.builtin.getent:
+        database: group
+        key: sshusers
+      register: _ssh_group_
+
+    - name: Verify | Assert SSH users group exists
+      ansible.builtin.assert:
+        that:
+          - "'sshusers' in _ssh_group_.ansible_facts.getent_group"
+        fail_msg: "SSH users group 'sshusers' does not exist"
+        success_msg: "SSH users group 'sshusers' verified"
+
+    - name: Verify | Check SSH group GID
+      ansible.builtin.command:
+        cmd: getent group sshusers
+      register: _ssh_group_gid_
+      changed_when: false
+
+    - name: Verify | Assert SSH group has correct GID
+      ansible.builtin.assert:
+        that:
+          - "'10000' in _ssh_group_gid_.stdout"
+        fail_msg: "SSH group does not have correct GID (expected 10000)"
+        success_msg: "SSH group GID verified: 10000"
+
+# -----------------------------------------------------------------------------
+# 7. MOTD News Service Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if motd-news.timer exists
+      ansible.builtin.stat:
+        path: "/lib/systemd/system/motd-news.timer"
+      register: _motd_timer_exists_
+
+    - name: Verify | Check motd-news.timer status (if exists)
+      ansible.builtin.command:
+        cmd: systemctl is-enabled motd-news.timer
+      register: _motd_timer_status_
+      changed_when: false
+      failed_when: false
+      when: _motd_timer_exists_.stat.exists
+
+    - name: Verify | Assert motd-news.timer is disabled (if exists)
+      ansible.builtin.assert:
+        that:
+          - _motd_timer_status_.stdout == "masked" or _motd_timer_status_.rc != 0
+        fail_msg: "motd-news.timer is not disabled/masked"
+        success_msg: "motd-news.timer verified as disabled/masked"
+      when: _motd_timer_exists_.stat.exists
+
+# -----------------------------------------------------------------------------
+# 8. Final Summary
+# -----------------------------------------------------------------------------
+    - name: Verify | Show verification results
+      ansible.builtin.debug:
+        msg: "All OS Customize verification checks completed successfully!"
+
+    - name: Verify | Final verification summary
+      ansible.builtin.debug:
+        msg:
+          - "Banner: Deployed at {{ os_customize_welcome_banner_path }}"
+          - "Login script: Deployed at {{ os_customize_welcome_script_path }}"
+          - "Packages: bc, vim installed"
+          - "Timezone: Europe/Warsaw configured"
+          - "Bashrc: Configured for root and skel"
+          - "SSH group: sshusers (GID 10000) created"
+          - "MOTD news: Disabled"
+          - "OS Customize role verification: PASSED"

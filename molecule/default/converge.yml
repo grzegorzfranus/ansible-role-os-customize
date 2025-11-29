@@ -1,0 +1,72 @@
+# =============================================================================
+# Ansible Role: OS Customize - Molecule Convergence Playbook
+# =============================================================================
+# This playbook executes the main role functionality in the test environment.
+# It performs the following steps:
+# - Updates package repositories
+# - Ensures system readiness
+# - Executes the OS Customize role
+#
+# Flow:
+# 1. Update package cache
+# 2. Wait for system initialization
+# 3. Apply OS Customize role
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# 1. Pre-Tasks Setup
+# -----------------------------------------------------------------------------
+- name: molecule | Converge
+  hosts: all
+
+  pre_tasks:
+    # Package Cache Update
+    - name: Converge | Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      changed_when: false
+      when: >
+        ansible_os_family == "Debian"
+
+    - name: Converge | Update dnf cache
+      ansible.builtin.dnf:
+        update_cache: true
+      changed_when: false
+      when: >
+        ansible_os_family == "RedHat"
+
+    # System Initialization
+    - name: Converge | Wait for systemd to complete initialization
+      command: systemctl is-system-running
+      register: systemctl_status
+      until: >
+        'running' in systemctl_status.stdout or
+        'degraded' in systemctl_status.stdout
+      retries: 30
+      delay: 5
+      when: >
+        ansible_service_mgr == 'systemd'
+      changed_when: false
+      failed_when: systemctl_status.rc > 1
+
+# -----------------------------------------------------------------------------
+# 2. Role Execution
+# -----------------------------------------------------------------------------
+  roles:
+    - role: grzegorzfranus.os_customize
+      vars:
+        os_customize_system_admin_mail: "test@molecule.local"
+        os_customize_configure_timezone: true
+        os_customize_timezone: "Europe/Warsaw"
+        os_customize_configure_additional_packages: true
+        os_customize_additional_packages:
+          - bc
+          - vim
+        os_customize_configure_welcome_message: true
+        os_customize_configure_bashrc: true
+        os_customize_disable_motd_news: true
+        os_customize_configure_ssh_group: true
+        os_customize_ssh_group_name: "sshusers"
+        os_customize_ssh_group_gid: 10000

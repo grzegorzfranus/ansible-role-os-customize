@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1] - 2025-11-29
 
+### Added ✅
+- Molecule test scenario with comprehensive verification tests.
+- GitHub Actions workflows for test/validation and Galaxy publishing.
+
 ### Fixed 🔧
 - Updated deprecated `ansible_date_time` variable to `ansible_facts['date_time']` format in login templates.
 - Ensured compatibility with Ansible 2.20+ `INJECT_FACTS_AS_VARS` deprecation.

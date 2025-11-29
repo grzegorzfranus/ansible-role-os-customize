@@ -84,12 +84,22 @@ The role is organized as follows:
 
 ```
 ansible-role-os-customize/
+├── .github/
+│   └── workflows/
+│       ├── test-and-validation.yml  # CI testing pipeline
+│       └── publish-to-galaxy.yml    # Galaxy publishing workflow
 ├── defaults/
 │   └── main.yml             # Default role variables
 ├── handlers/
 │   └── main.yml             # Event handlers
 ├── meta/
 │   └── main.yml             # Role metadata and dependencies
+├── molecule/
+│   └── default/
+│       ├── converge.yml     # Test playbook
+│       ├── molecule.yml     # Molecule configuration
+│       ├── prepare.yml      # Test preparation
+│       └── verify.yml       # Verification tests
 ├── tasks/
 │   ├── main.yml             # Main task orchestration
 │   ├── assert.yml           # Variable validation
@@ -178,6 +188,38 @@ ansible-role-os-customize/
         os_customize_ssh_group_name: "ssh-access"
         os_customize_ssh_group_gid: 59888
 ```
+
+## Testing
+
+This role includes Molecule tests for comprehensive verification across multiple distributions.
+
+### Running Tests
+
+```bash
+# Run default test scenario
+molecule test
+
+# Run tests on specific distribution
+MOLECULE_DISTRO=ubuntu2404 molecule test
+MOLECULE_DISTRO=debian12 molecule test
+MOLECULE_DISTRO=rockylinux9 molecule test
+```
+
+### Test Matrix
+
+| Distribution | Image |
+|--------------|-------|
+| Ubuntu 24.04 | geerlingguy/docker-ubuntu2404-ansible |
+| Ubuntu 22.04 | geerlingguy/docker-ubuntu2204-ansible |
+| Debian 12 | geerlingguy/docker-debian12-ansible |
+| Debian 11 | geerlingguy/docker-debian11-ansible |
+| Rocky Linux 9 | geerlingguy/docker-rockylinux9-ansible |
+
+### CI/CD
+
+This role uses GitHub Actions for continuous integration:
+- **test-and-validation.yml** - Runs linting and Molecule tests on every push/PR
+- **publish-to-galaxy.yml** - Publishes to Ansible Galaxy on release
 
 ## Variable Validation
 
