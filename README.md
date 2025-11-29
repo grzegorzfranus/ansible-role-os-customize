@@ -2,7 +2,7 @@
 
 |Source|Version|CI|License|
 |------|-------|-------|-------|
-|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-os-customize)](https://github.com/grzegorzfranus/ansible-role-os-customize/releases)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
+|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-os-customize)](https://github.com/grzegorzfranus/ansible-role-os-customize/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-os-customize/actions/workflows/test-and-validation.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role customizes basic Linux OS settings, including login banners, welcome messages, shell environment, timezone, and package installation. It is designed for secure, consistent, and maintainable system configuration across Debian, Ubuntu, and RHEL-based distributions.
 
