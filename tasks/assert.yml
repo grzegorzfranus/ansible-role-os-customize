@@ -19,7 +19,7 @@
 # -----------------------------------------------------------------------------
 # 1. General Settings
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate system admin email"
+- name: "OS Customize | assert | Validate system admin email"
   ansible.builtin.assert:
     that:
       - os_customize_system_admin_mail is defined
@@ -31,7 +31,7 @@
 # -----------------------------------------------------------------------------
 # 2. Timezone Configuration
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate timezone configuration flag"
+- name: "OS Customize | assert | Validate timezone configuration flag"
   ansible.builtin.assert:
     that:
       - os_customize_configure_timezone is defined
@@ -39,7 +39,7 @@
     fail_msg: "❌ os_customize_configure_timezone must be a boolean (true/false)"
     success_msg: "✅ Timezone configuration flag is valid: {{ os_customize_configure_timezone }}"
 
-- name: "🧪 OS Customize | assert | Validate timezone value"
+- name: "OS Customize | assert | Validate timezone value"
   ansible.builtin.assert:
     that:
       - os_customize_timezone is defined
@@ -51,7 +51,7 @@
 # -----------------------------------------------------------------------------
 # 3. Additional Packages
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate additional packages flag"
+- name: "OS Customize | assert | Validate additional packages flag"
   ansible.builtin.assert:
     that:
       - os_customize_configure_additional_packages is defined
@@ -59,7 +59,7 @@
     fail_msg: "❌ os_customize_configure_additional_packages must be a boolean (true/false)"
     success_msg: "✅ Additional packages flag is valid: {{ os_customize_configure_additional_packages }}"
 
-- name: "🧪 OS Customize | assert | Validate additional packages list"
+- name: "OS Customize | assert | Validate additional packages list"
   ansible.builtin.assert:
     that:
       - os_customize_additional_packages is defined
@@ -70,7 +70,7 @@
 # -----------------------------------------------------------------------------
 # 4. Welcome Message and Banner
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate welcome message flag"
+- name: "OS Customize | assert | Validate welcome message flag"
   ansible.builtin.assert:
     that:
       - os_customize_configure_welcome_message is defined
@@ -81,7 +81,7 @@
 # -----------------------------------------------------------------------------
 # 5. Bashrc Configuration
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate bashrc configuration flag"
+- name: "OS Customize | assert | Validate bashrc configuration flag"
   ansible.builtin.assert:
     that:
       - os_customize_configure_bashrc is defined
@@ -92,7 +92,7 @@
 # -----------------------------------------------------------------------------
 # 6. MOTD News Configuration
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate MOTD news flag"
+- name: "OS Customize | assert | Validate MOTD news flag"
   ansible.builtin.assert:
     that:
       - os_customize_disable_motd_news is defined
@@ -103,7 +103,7 @@
 # -----------------------------------------------------------------------------
 # 7. SSH User Group Configuration
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | assert | Validate SSH group flag"
+- name: "OS Customize | assert | Validate SSH group flag"
   ansible.builtin.assert:
     that:
       - os_customize_configure_ssh_group is defined
@@ -111,7 +111,7 @@
     fail_msg: "❌ os_customize_configure_ssh_group must be a boolean (true/false)"
     success_msg: "✅ SSH group configuration flag is valid: {{ os_customize_configure_ssh_group }}"
 
-- name: "🧪 OS Customize | assert | Validate SSH group name"
+- name: "OS Customize | assert | Validate SSH group name"
   ansible.builtin.assert:
     that:
       - os_customize_ssh_group_name is defined
@@ -120,7 +120,7 @@
     fail_msg: "❌ os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
     success_msg: "✅ SSH group name is valid: {{ os_customize_ssh_group_name }}"
 
-- name: "🧪 OS Customize | assert | Validate SSH group GID"
+- name: "OS Customize | assert | Validate SSH group GID"
   ansible.builtin.assert:
     that:
       - os_customize_ssh_group_gid is defined

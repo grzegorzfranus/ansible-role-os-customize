@@ -16,7 +16,7 @@
 # -----------------------------------------------------------------------------
 # 1. OS-Specific Variables
 # -----------------------------------------------------------------------------
-- name: "📂 OS Customize | include_vars | Load OS-specific variables"
+- name: "OS Customize | include_vars | Load OS-specific variables"
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -38,7 +38,7 @@
 # -----------------------------------------------------------------------------
 # 2. Variable Validation
 # -----------------------------------------------------------------------------
-- name: "🧪 OS Customize | import_tasks | Execute variable validation"
+- name: "OS Customize | import_tasks | Execute variable validation"
   ansible.builtin.import_tasks: assert.yml
   run_once: true
   delegate_to: localhost
@@ -50,7 +50,7 @@
 # -----------------------------------------------------------------------------
 # 3. System Configuration
 # -----------------------------------------------------------------------------
-- name: "⚙️ OS Customize | include_tasks | Execute system configuration"
+- name: "OS Customize | include_tasks | Execute system configuration"
   ansible.builtin.include_tasks: configure.yml
   tags:
     - always
@@ -61,7 +61,7 @@
 # 4. Bashrc Configuration (Optional)
 # -----------------------------------------------------------------------------
 - block:
-    - name: "🔎 OS Customize | find | Locate .bashrc files in home directories"
+    - name: "OS Customize | find | Locate .bashrc files in home directories"
       ansible.builtin.find:
         paths: "/home/"
         patterns: ".bashrc"
@@ -70,7 +70,7 @@
         depth: 2
       register: _found_files_
 
-    - name: "⚙️ OS Customize | include_tasks | Execute bashrc configuration"
+    - name: "OS Customize | include_tasks | Execute bashrc configuration"
       ansible.builtin.include_tasks: bashrc.yml
       loop: "{{ os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
   when: >

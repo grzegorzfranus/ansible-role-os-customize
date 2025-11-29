@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-11-29
+
+### Fixed 🔧
+- Updated deprecated `ansible_date_time` variable to `ansible_facts['date_time']` format in login templates.
+- Ensured compatibility with Ansible 2.20+ `INJECT_FACTS_AS_VARS` deprecation.
+
+### Changed 🔄
+- Templates now use `ansible_facts['date_time']['date']` instead of `ansible_date_time.date`.
+- Removed emojis from all task names for cleaner output.
+
 ## [1.0.0] - 2025-08-10
 ### Added ✅
 - Initial role hardening to align with internal Ansible best practices.

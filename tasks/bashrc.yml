@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # 1. Check for Existing Ansible-Managed Block
 # -----------------------------------------------------------------------------
-- name: "⚙️ OS Customize | lineinfile | Check for existing managed block"
+- name: "OS Customize | lineinfile | Check for existing managed block"
   become: true
   ansible.builtin.lineinfile:
     state: absent
@@ -27,7 +27,7 @@
 # -----------------------------------------------------------------------------
 # 2. Insert Ansible-Managed Block if Absent
 # -----------------------------------------------------------------------------
-- name: "⚙️ OS Customize | blockinfile | Insert configuration block"
+- name: "OS Customize | blockinfile | Insert configuration block"
   become: true
   ansible.builtin.blockinfile:
     path: "{{ item }}"

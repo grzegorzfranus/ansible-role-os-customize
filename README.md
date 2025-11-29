@@ -32,7 +32,7 @@ List of officially supported operating systems:
 | EL | 8, 9 | ![✓](https://img.shields.io/badge/✓-brightgreen.svg) |
 
 ### Ansible Version
-Ansible >= 2.15
+Ansible >= 2.15 (tested with Ansible 2.20)
 
 ### Python Version
 Python >= 3.9
