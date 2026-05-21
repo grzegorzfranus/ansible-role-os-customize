@@ -60,7 +60,13 @@
 # -----------------------------------------------------------------------------
 # 4. Bashrc Configuration (Optional)
 # -----------------------------------------------------------------------------
-- block:
+- name: "OS Customize | block | Configure bashrc files"
+  when: >
+    os_customize_configure_bashrc | default(false)
+  tags:
+    - configure
+    - bashrc
+  block:
     - name: "OS Customize | find | Locate .bashrc files in home directories"
       ansible.builtin.find:
         paths: "/home/"
@@ -73,8 +79,3 @@
     - name: "OS Customize | include_tasks | Execute bashrc configuration"
       ansible.builtin.include_tasks: bashrc.yml
       loop: "{{ os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
-  when: >
-    os_customize_configure_bashrc | default(false)
-  tags:
-    - configure
-    - bashrc
