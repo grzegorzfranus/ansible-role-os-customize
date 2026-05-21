@@ -54,19 +54,21 @@
 # -----------------------------------------------------------------------------
 # 4. Configure System Timezone (Optional)
 # -----------------------------------------------------------------------------
-- block:
-    - name: "OS Customize | shell | Check if timezone is available"
-      ansible.builtin.shell: timedatectl list-timezones | grep -q "^{{ os_customize_timezone }}$"
-      register: timezone_available
-      changed_when: false
-      failed_when: false
-      check_mode: false
+- name: "OS Customize | block | Configure system timezone"
+  when: >
+    os_customize_configure_timezone | default(false)
+  block:
+    - name: "OS Customize | stat | Check if timezone is available"
+      ansible.builtin.stat:
+        path: "/usr/share/zoneinfo/{{ os_customize_timezone }}"
+      register: timezone_file
 
     - name: "OS Customize | fail | Fail if timezone is not available"
       ansible.builtin.fail:
         msg: "The timezone {{ os_customize_timezone }} is not available on this system"
       when: >
-        timezone_available.rc != 0
+        not timezone_file.stat.exists or
+        timezone_file.stat.isdir
 
     - name: "OS Customize | timezone | Set system timezone"
       community.general.timezone:
@@ -79,8 +81,7 @@
         msg: "Timezone changed to {{ os_customize_timezone }}"
       when: >
         timezone_changed.changed
-  when: >
-    os_customize_configure_timezone | default(false)
+      # noqa: no-handler
 
 # -----------------------------------------------------------------------------
 # 5. Disable MOTD News Service (Optional)

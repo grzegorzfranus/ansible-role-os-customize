@@ -2,7 +2,7 @@
 
 |Source|Version|CI|License|
 |------|-------|-------|-------|
-|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-os-customize)](https://github.com/grzegorzfranus/ansible-role-os-customize/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-os-customize/actions/workflows/test-and-validation.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
+|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-os-customize)](https://github.com/grzegorzfranus/ansible-role-os-customize/releases)|[![CI](https://github.com/grzegorzfranus/ansible-role-os-customize/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-os-customize/actions/workflows/ci.yml)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role customizes basic Linux OS settings, including login banners, welcome messages, shell environment, timezone, and package installation. It is designed for secure, consistent, and maintainable system configuration across Debian, Ubuntu, and RHEL-based distributions.
 
@@ -78,16 +78,16 @@ All variables for this role are declared in:
 |----------|-------------|---------|
 | `os_customize_bashrc_list` | List of .bashrc files to configure | `/root/.bashrc` and `/etc/skel/.bashrc` |
 
-## Role Structure
-
-The role is organized as follows:
+## 📁 Project Directory Structure
 
 ```
 ansible-role-os-customize/
-├── .github/
-│   └── workflows/
-│       ├── test-and-validation.yml  # CI testing pipeline
-│       └── publish-to-galaxy.yml    # Galaxy publishing workflow
+├── .github/                  # GitHub Actions workflows
+│   └── workflows/           # CI/CD automation
+│       ├── ci.yml           # CI pipeline (reusable ansible-ci.yml)
+│       └── release.yml      # Release Please + Galaxy publish
+├── .release-please-manifest.json # Release Please version manifest
+├── release-please-config.json # Release Please configuration
 ├── defaults/
 │   └── main.yml             # Default role variables
 ├── handlers/
@@ -215,11 +215,26 @@ MOLECULE_DISTRO=rockylinux9 molecule test
 | Debian 11 | geerlingguy/docker-debian11-ansible |
 | Rocky Linux 9 | geerlingguy/docker-rockylinux9-ansible |
 
-### CI/CD
+## CI/CD Pipeline
 
-This role uses GitHub Actions for continuous integration:
-- **test-and-validation.yml** - Runs linting and Molecule tests on every push/PR
-- **publish-to-galaxy.yml** - Publishes to Ansible Galaxy on release
+### CI Pipeline
+
+Runs on every Pull Request via centralized reusable workflow:
+
+1. **Branch Name Lint** — enforces naming conventions (`feature/`, `bugfix/`, etc.)
+2. **YAML Lint** — validates all YAML files
+3. **Ansible Lint** — enforces best practices and guidelines compliance
+4. **Security Scan** — TruffleHog secret detection
+5. **Molecule Tests** — matrix across Ubuntu 24.04, Ubuntu 22.04, Debian 12, Debian 11, and Rocky Linux 9
+6. **Merge Check** — aggregated status check for branch protection
+
+### Release & Publish
+
+Automated via [Release Please](https://github.com/googleapis/release-please):
+
+1. Merge to `main` → Release Please creates a Release PR with changelog
+2. Merge Release PR → creates Git tag + GitHub Release
+3. Galaxy publish triggers automatically on release using centralized action
 
 ## Variable Validation
 
@@ -242,10 +257,18 @@ This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).
 
 Contributions, bug reports, and feature requests are welcome!
 
-- Fork the repository and create your branch from `main`.
-- Make your changes with clear, descriptive commit messages.
-- Ensure your code passes all lint tests.
-- Submit a pull request describing your changes and the motivation.
-- For major changes, please open an issue first to discuss what you would like to change.
+- Fork the repository and create your branch from `main`
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+  - `feat:` — new features (minor version bump)
+  - `fix:` — bug fixes (patch version bump)
+  - `docs:` — documentation changes
+  - `refactor:` — code refactoring
+  - `test:` — test additions
+  - `ci:` — CI/CD changes
+  - `chore:` — maintenance tasks
+- Use branch naming convention: `feature/`, `bugfix/`, `hotfix/`, `docs/`, `refactor/`, `test/`, `chore/`, `ci/`
+- Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
+- Submit a pull request describing your changes
+- For major changes, please open an issue first to discuss what you would like to change
 
 If you have questions or suggestions, feel free to open an issue or contact the author via GitHub.
