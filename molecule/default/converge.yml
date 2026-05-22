@@ -55,7 +55,7 @@
 # 2. Role Execution
 # -----------------------------------------------------------------------------
   roles:
-    - role: grzegorzfranus.os_customize
+    - role: ../../..
       vars:
         os_customize_system_admin_mail: "test@molecule.local"
         os_customize_configure_timezone: true
