@@ -6,7 +6,7 @@
 
 This Ansible role customizes basic Linux OS settings, including login banners, welcome messages, shell environment, timezone, and package installation. It is designed for secure, consistent, and maintainable system configuration across Debian, Ubuntu, and RHEL-based distributions.
 
-## Main Features
+## ✨ Features
 
 - Set system timezone with validation
 - Install and manage additional packages with flexible configuration
@@ -18,7 +18,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - Ensure robust variable validation and idempotency
 - OS-specific configuration handling
 
-## Requirements
+## 📋 Requirements
 
 ### Supported Operating Systems
 List of officially supported operating systems:
@@ -43,7 +43,75 @@ The role uses facts gathered by Ansible on the remote host. If you disable the S
 ### Root Access
 This role requires root access for most tasks. Use a user with root privileges or set `become: true` in your playbook or inventory.
 
-## Role Variables
+## 🚀 Quick Start
+
+### 1. Basic OS Customization
+
+```yaml
+---
+- name: Customize OS Settings
+  hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.os_customize
+```
+
+### 2. Custom Timezone and Packages
+
+```yaml
+---
+- name: Customize OS with Timezone and Custom Packages
+  hosts: all
+  become: true
+  roles:
+    - role: grzegorzfranus.os_customize
+      vars:
+        os_customize_configure_timezone: true
+        os_customize_timezone: "Europe/Warsaw"
+        os_customize_additional_packages:
+          - vim
+          - curl
+          - htop
+```
+
+### 3. Run the playbook
+
+```bash
+ansible-playbook -i inventory playbook.yml
+```
+
+## ⚙️ Configuration
+
+### Default Configuration
+
+The role is pre-configured with secure and clean defaults:
+
+```yaml
+# Enable package installs but keep timezone configuration optional
+os_customize_configure_timezone: false
+os_customize_timezone: "Europe/Warsaw"
+os_customize_configure_additional_packages: true
+os_customize_additional_packages: [bc, vim, nano, htop]
+os_customize_configure_welcome_message: true
+os_customize_configure_bashrc: true
+os_customize_disable_motd_news: true
+os_customize_configure_ssh_group: true
+```
+
+## 📌 Role Properties
+
+| Property | Value | Description |
+|----------|-------|-------------|
+| **Idempotent** | ✅ Yes | Running the role multiple times produces no changes unless configuration changes. |
+| **Atomic** | ❌ No | Changes are applied sequentially. A failure mid-run may leave the OS partially customized. |
+| **Check Mode** | ✅ Supported | All customization steps support check mode without making changes. |
+| **Diff Mode** | ✅ Supported | File templates support diff mode preview. |
+
+## 📤 Role Output
+
+This role does not set any public output facts.
+
+## 📊 Variables
 
 All variables for this role are declared in:
 - `defaults/main.yml`
@@ -78,7 +146,22 @@ All variables for this role are declared in:
 |----------|-------------|---------|
 | `os_customize_bashrc_list` | List of .bashrc files to configure | `/root/.bashrc` and `/etc/skel/.bashrc` |
 
-## 📁 Project Directory Structure
+## 🔧 Troubleshooting
+
+### Timezone Errors
+
+If timezone configuration fails, verify the spelling of timezone string and that it exists on the target host:
+
+```bash
+# List available timezones
+timedatectl list-timezones
+```
+
+### Shell Welcome Message Issues
+
+If the welcome message does not appear on login, verify that `/etc/profile.d/` scripts are sourced by your shell configuration.
+
+## 📁 File Structure
 
 ```
 ansible-role-os-customize/
@@ -236,6 +319,40 @@ Automated via [Release Please](https://github.com/googleapis/release-please):
 2. Merge Release PR → creates Git tag + GitHub Release
 3. Galaxy publish triggers automatically on release using centralized action
 
+## 🔍 Verification
+
+After deployment, verify that the OS customizations have been applied successfully:
+
+### Check Timezone
+
+```bash
+# Verify system timezone
+timedatectl
+```
+
+### Verify Welcome Message and Login Banner
+
+```bash
+# View login banner
+cat /etc/issue.net
+
+# View MOTD welcome script
+cat /etc/profile.d/welcome.sh
+```
+
+### Verify SSH Group
+
+```bash
+# Check if group exists
+getent group sshusers
+```
+
+## 🛡️ Security Features
+
+- ✅ **Login Banners**: Security warnings displayed on login screens.
+- ✅ **Privileged Escalation**: All tasks run with `become: true` where necessary.
+- ✅ **Access Control**: Dedicated SSH users group created to lock down access.
+
 ## Variable Validation
 
 This role includes comprehensive validation of all variables through assertions to ensure proper configuration before making any changes to the system. The validations include:
@@ -245,15 +362,15 @@ This role includes comprehensive validation of all variables through assertions 
 - **Timezone Validation** - Verifies that the specified timezone is available on the system
 - **Fail Fast** - If any validation fails, the role will stop execution with a descriptive error message
 
-## License
+## 📝 License
 
 Apache-2.0
 
-## Author Information
+## 👥 Author Information
 
 This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).
 
-## Contributing
+## 🤝 Contributing
 
 Contributions, bug reports, and feature requests are welcome!
 
