@@ -285,8 +285,9 @@ ansible-role-os-customize/
 │   └── scripts/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
-└── vars/
-    └── *.yml                # OS-specific and internal variables
+├── vars/
+│   └── *.yml                # OS-specific and internal variables
+└── requirements.yml         # External collection dependencies (community.general)
 ```
 
 ## 🏷️ Tags
