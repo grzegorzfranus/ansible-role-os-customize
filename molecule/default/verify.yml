@@ -53,19 +53,19 @@
 # -----------------------------------------------------------------------------
     - name: Verify | Check if banner file exists
       ansible.builtin.stat:
-        path: "{{ os_customize_welcome_banner_path }}"
+        path: "{{ __os_customize_welcome_banner_path }}"
       register: _banner_result_
 
     - name: Verify | Assert banner file exists
       ansible.builtin.assert:
         that:
           - _banner_result_.stat.exists
-        fail_msg: "Banner file not found at {{ os_customize_welcome_banner_path }}"
-        success_msg: "Banner file verified at {{ os_customize_welcome_banner_path }}"
+        fail_msg: "Banner file not found at {{ __os_customize_welcome_banner_path }}"
+        success_msg: "Banner file verified at {{ __os_customize_welcome_banner_path }}"
 
     - name: Verify | Check banner file permissions
       ansible.builtin.stat:
-        path: "{{ os_customize_welcome_banner_path }}"
+        path: "{{ __os_customize_welcome_banner_path }}"
       register: _banner_perms_
 
     - name: Verify | Assert banner file permissions
@@ -77,19 +77,19 @@
 
     - name: Verify | Check if login script exists
       ansible.builtin.stat:
-        path: "{{ os_customize_welcome_script_path }}"
+        path: "{{ __os_customize_welcome_script_path }}"
       register: _script_result_
 
     - name: Verify | Assert login script exists
       ansible.builtin.assert:
         that:
           - _script_result_.stat.exists
-        fail_msg: "Login script not found at {{ os_customize_welcome_script_path }}"
-        success_msg: "Login script verified at {{ os_customize_welcome_script_path }}"
+        fail_msg: "Login script not found at {{ __os_customize_welcome_script_path }}"
+        success_msg: "Login script verified at {{ __os_customize_welcome_script_path }}"
 
     - name: Verify | Check banner content contains security warning
       ansible.builtin.command:
-        cmd: grep -q "AUTHORIZED ACCESS ONLY" {{ os_customize_welcome_banner_path }}
+        cmd: grep -q "AUTHORIZED ACCESS ONLY" {{ __os_customize_welcome_banner_path }}
       register: _banner_content_
       changed_when: false
 
@@ -239,8 +239,8 @@
     - name: Verify | Final verification summary
       ansible.builtin.debug:
         msg:
-          - "Banner: Deployed at {{ os_customize_welcome_banner_path }}"
-          - "Login script: Deployed at {{ os_customize_welcome_script_path }}"
+          - "Banner: Deployed at {{ __os_customize_welcome_banner_path }}"
+          - "Login script: Deployed at {{ __os_customize_welcome_script_path }}"
           - "Packages: bc, vim installed"
           - "Timezone: UTC configured"
           - "Bashrc: Configured for root and skel"

@@ -1,0 +1,74 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Argument Specifications
+# =============================================================================
+# Declarative input specifications for static role variable validation.
+# =============================================================================
+
+argument_specs:
+  main:
+    short_description: "Customize Linux OS settings, banners, login scripts, and shell environment."
+    description:
+      - "This role customizes basic Linux OS settings, including login banners, welcome messages,"
+      - "shell environment, timezone, and package installation across Debian, Ubuntu, and EL systems."
+    author:
+      - "Grzegorz Franus"
+    options:
+      os_customize_system_admin_mail:
+        type: str
+        default: "admin@example.com"
+        description: "System administrator e-mail address used in banners and notifications."
+
+      os_customize_configure_timezone:
+        type: bool
+        default: false
+        description: "Enable or disable timezone configuration."
+
+      os_customize_timezone:
+        type: str
+        default: "Europe/Warsaw"
+        description: "Timezone to set on the target system (e.g. 'Europe/Warsaw', 'UTC')."
+
+      os_customize_configure_additional_packages:
+        type: bool
+        default: true
+        description: "Enable or disable installation of additional packages."
+
+      os_customize_additional_packages:
+        type: list
+        elements: str
+        default:
+          - bc
+          - vim
+          - nano
+        description: "List of additional system packages to install."
+
+      os_customize_configure_welcome_message:
+        type: bool
+        default: true
+        description: "Enable or disable deployment of welcome message script and login banner."
+
+      os_customize_configure_bashrc:
+        type: bool
+        default: true
+        description: "Enable or disable configuration of .bashrc files for root and users."
+
+      os_customize_disable_motd_news:
+        type: bool
+        default: true
+        description: "Enable or disable stopping and masking of the motd-news.timer systemd service."
+
+      os_customize_configure_ssh_group:
+        type: bool
+        default: true
+        description: "Enable or disable creation of a dedicated SSH users group."
+
+      os_customize_ssh_group_name:
+        type: str
+        default: "sshusers"
+        description: "Name of the dedicated SSH users group."
+
+      os_customize_ssh_group_gid:
+        type: int
+        default: 10000
+        description: "Numerical GID for the dedicated SSH users group."

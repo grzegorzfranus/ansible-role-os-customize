@@ -6,11 +6,7 @@
 # of all role components in the correct order. Each task is tagged appropriately
 # to allow for selective execution.
 #
-# Flow:
-# 1. Load OS-specific variables
-# 2. Validate role variables and requirements
-# 3. Configure system (banner, login, timezone, packages, services, groups)
-# 4. Configure .bashrc files (optional)
+# Flow: include_vars → assert → configure → bashrc
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -40,8 +36,6 @@
 # -----------------------------------------------------------------------------
 - name: "OS Customize | import_tasks | Execute variable validation"
   ansible.builtin.import_tasks: assert.yml
-  run_once: true
-  delegate_to: localhost
   tags:
     - always
     - validate
@@ -50,8 +44,8 @@
 # -----------------------------------------------------------------------------
 # 3. System Configuration
 # -----------------------------------------------------------------------------
-- name: "OS Customize | include_tasks | Execute system configuration"
-  ansible.builtin.include_tasks: configure.yml
+- name: "OS Customize | import_tasks | Execute system configuration"
+  ansible.builtin.import_tasks: configure.yml
   tags:
     - always
     - configure
@@ -78,4 +72,4 @@
 
     - name: "OS Customize | include_tasks | Execute bashrc configuration"
       ansible.builtin.include_tasks: bashrc.yml
-      loop: "{{ os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
+      loop: "{{ __os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"

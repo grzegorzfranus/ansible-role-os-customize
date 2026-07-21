@@ -1,9 +1,9 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - RedHat-Specific Variables
+# Ansible Role: OS Customize - Internal RedHat Variables
 # =============================================================================
-# This file defines variables specific to RedHat-based distributions.
-# These values override or supplement the common variables defined in main.yml.
+# Internal constants and computed values specific to RedHat-based systems.
+# These values are NOT user-overridable. All use double-underscore prefix per Red Hat CoP.
 #
 # Sections:
 #   1. Banner and Login Script Paths
@@ -13,7 +13,7 @@
 # 1. Banner and Login Script Paths
 # -----------------------------------------------------------------------------
 # Path to the login banner file on RedHat systems
-os_customize_welcome_banner_path: "/etc/profile.d/banner"
+__os_customize_welcome_banner_path: "/etc/profile.d/banner"
 
 # Path to the login message script on RedHat systems
-os_customize_welcome_script_path: "/etc/profile.d/login.sh"
+__os_customize_welcome_script_path: "/etc/profile.d/login.sh"

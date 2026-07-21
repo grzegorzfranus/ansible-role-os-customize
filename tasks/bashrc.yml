@@ -19,7 +19,7 @@
   ansible.builtin.lineinfile:
     state: absent
     path: "{{ item }}"
-    regexp: "{{ os_customize_bashrc_marker }}"
+    regexp: "{{ __os_customize_bashrc_marker }}"
   check_mode: true
   changed_when: false
   register: _check_status_
@@ -51,6 +51,6 @@
       HISTTIMEFORMAT="%h %d %H:%M:%S "
       HISTIGNORE="ls:ps:top:uptime"
       shopt -s cmdhist
-    marker: "{{ os_customize_bashrc_marker }}"
+    marker: "{{ __os_customize_bashrc_marker }}"
   when: >
     _check_status_.found == 0

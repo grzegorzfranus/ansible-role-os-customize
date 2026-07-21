@@ -22,10 +22,11 @@
   become: true
   ansible.builtin.template:
     src: "banner.j2"
-    dest: "{{ os_customize_welcome_banner_path }}"
+    dest: "{{ __os_customize_welcome_banner_path }}"
     owner: root
     group: root
     mode: "0644"
+    backup: true
 
 # -----------------------------------------------------------------------------
 # 2. Deploy Login Message Script
@@ -34,10 +35,11 @@
   become: true
   ansible.builtin.template:
     src: "scripts/login_{{ ansible_facts['os_family'] | lower }}.sh.j2"
-    dest: "{{ os_customize_welcome_script_path }}"
+    dest: "{{ __os_customize_welcome_script_path }}"
     owner: root
     group: root
     mode: "0644"
+    backup: true
 
 # -----------------------------------------------------------------------------
 # 3. Install Additional Packages (Optional)

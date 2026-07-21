@@ -15,7 +15,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🐚 **Shell Standardization**: Standardize and enhance .bashrc for root, skeleton, and all users
 - 🔄 **MOTD Management**: Disable MOTD news service to prevent unwanted external network messages
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
-- 🧪 **Variable Validation**: Robust dual-layer variable validation and OS-specific configuration handling
+- 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling
 
 ## 🎯 Architecture
 
@@ -107,14 +107,17 @@ The role comes with secure and clean defaults:
 
 ```yaml
 # Enable package installs but keep timezone configuration optional
+os_customize_system_admin_mail: "admin@example.com"
 os_customize_configure_timezone: false
 os_customize_timezone: "Europe/Warsaw"
 os_customize_configure_additional_packages: true
-os_customize_additional_packages: [bc, vim, nano, htop]
+os_customize_additional_packages: [bc, vim, nano]
 os_customize_configure_welcome_message: true
 os_customize_configure_bashrc: true
 os_customize_disable_motd_news: true
 os_customize_configure_ssh_group: true
+os_customize_ssh_group_name: "sshusers"
+os_customize_ssh_group_gid: 10000
 ```
 
 ### Advanced Configuration
@@ -154,26 +157,24 @@ Customize for specific enterprise environments:
 | `os_customize_configure_timezone` | Enable/disable timezone configuration | `false` |
 | `os_customize_timezone` | Timezone to set on the system (e.g., "Europe/Warsaw") | `"Europe/Warsaw"` |
 | `os_customize_configure_additional_packages` | Enable/disable installation of additional packages | `true` |
-| `os_customize_additional_packages` | List of additional packages to install | `[bc, vim, nano, htop]` |
+| `os_customize_additional_packages` | List of additional packages to install | `[bc, vim, nano]` |
 | `os_customize_configure_welcome_message` | Enable/disable welcome message and login banner | `true` |
 | `os_customize_configure_bashrc` | Enable/disable configuration of .bashrc files | `true` |
 | `os_customize_disable_motd_news` | Enable/disable motd-news.timer service | `true` |
 | `os_customize_configure_ssh_group` | Enable/disable creation of a dedicated SSH users group | `true` |
 | `os_customize_ssh_group_name` | Name of the SSH users group | `"sshusers"` |
-| `os_customize_ssh_group_gid` | GID for the SSH users group | `59876` |
+| `os_customize_ssh_group_gid` | GID for the SSH users group | `10000` |
 
-### Banner and Welcome Message Options
+### Internal OS Variables (Red Hat CoP Prefix)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `os_customize_welcome_banner_path` | Path to the banner file | OS-specific (see vars/*.yml) |
-| `os_customize_welcome_script_path` | Path to the login message script | OS-specific (see vars/*.yml) |
+These internal variables are managed in `vars/*.yml` using double-underscore prefixes and are not intended for direct user override:
 
-### Bashrc Configuration Options
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `os_customize_bashrc_list` | List of .bashrc files to configure | `["/root/.bashrc", "/etc/skel/.bashrc"]` |
+| Variable | Description | Value |
+|----------|-------------|-------|
+| `__os_customize_welcome_banner_path` | Path to the login banner file | `/etc/profile.d/banner` |
+| `__os_customize_welcome_script_path` | Path to the login message script | `/etc/profile.d/login.sh` |
+| `__os_customize_bashrc_marker` | Marker for managed .bashrc block | `"# BEGIN ANSIBLE MANAGED BLOCK"` |
+| `__os_customize_bashrc_list` | Base list of managed .bashrc file paths | `["/root/.bashrc", "/etc/skel/.bashrc"]` |
 
 ## 📌 Role Properties
 
@@ -202,10 +203,10 @@ timedatectl status
 
 ```bash
 # View login banner
-cat /etc/issue.net
+cat /etc/profile.d/banner
 
 # View MOTD welcome script
-cat /etc/profile.d/welcome.sh
+cat /etc/profile.d/login.sh
 ```
 
 ### Verify SSH Group
@@ -219,6 +220,7 @@ getent group sshusers
 - ✅ **Login Banners**: Security warnings displayed on login screens.
 - ✅ **Privileged Escalation**: All tasks run with `become: true` where necessary.
 - ✅ **Access Control**: Dedicated SSH users group created to lock down access.
+- ✅ **Template Backups**: Automatic `backup: true` directives enabled for template deployments.
 
 ### Uninstall
 
@@ -267,6 +269,7 @@ ansible-role-os-customize/
 ├── handlers/
 │   └── main.yml             # Event handlers
 ├── meta/
+│   ├── argument_specs.yml   # Declarative argument specifications & static type validations
 │   └── main.yml             # Role metadata and Galaxy information
 ├── molecule/                # Molecule testing framework
 │   └── default/             # Default testing scenario
@@ -281,22 +284,23 @@ ansible-role-os-customize/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
 └── vars/
-    └── *.yml                # OS-specific variables
+    └── *.yml                # OS-specific and internal variables
 ```
 
 ## 🏷️ Tags
 
-All tags are prefixed with `os_customize_` to avoid collisions.
+All tags are prefixed with `os_customize_` or use standard Ansible tags (`always`, `configure`, `services`).
 
 | Tag | Description |
 |-----|-------------|
 | `always` | Tasks that always run (variable loading and validation) |
-| `os_customize_setup` | Setup tasks including OS-specific variables |
-| `os_customize_init` | Initial setup tasks |
-| `os_customize_validate` | Variable validation tasks |
-| `os_customize_check` | Validation and verification tasks |
-| `os_customize_configure` | System configuration tasks (banner, login, timezone, packages, services) |
-| `os_customize_services` | Service configuration tasks (MOTD news, SSH group) |
+| `setup` | Setup tasks including OS-specific variables |
+| `init` | Initial setup tasks |
+| `validate` | Variable validation tasks |
+| `check` | Validation and verification tasks |
+| `configure` | System configuration tasks (banner, login, timezone, packages, services) |
+| `services` | Service configuration tasks (MOTD news, SSH group) |
+
 ## CI/CD Pipeline
 
 This repository uses centralized, reusable GitHub Actions workflows from [grzegorzfranus/github-workflows](https://github.com/grzegorzfranus/github-workflows) (`v3.0.1`) for quality assurance, security scanning, and release automation.
