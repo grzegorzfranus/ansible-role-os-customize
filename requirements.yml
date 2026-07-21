@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Requirements
+# =============================================================================
+# This file defines the external collection dependencies required by the
+# OS Customize role.
+# =============================================================================
+
+collections:
+  - name: community.general
