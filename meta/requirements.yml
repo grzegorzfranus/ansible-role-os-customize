@@ -1,0 +1,10 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Collection & Role Requirements
+# =============================================================================
+# External collections required by this role.
+# =============================================================================
+
+collections:
+  - name: community.general
+    version: ">=8.0.0"

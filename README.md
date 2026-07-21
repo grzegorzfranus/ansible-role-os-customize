@@ -35,6 +35,7 @@ The role provides modular system customization tasks organized into functional a
 ## 📋 Requirements
 
 - **Ansible**: 2.15 or higher
+- **Collections**: `community.general` >= 8.0.0
 - **Python**: 3.9 or higher on target hosts
 - **Privileges**: sudo/root access on target hosts (`become: true`)
 
@@ -270,7 +271,8 @@ ansible-role-os-customize/
 │   └── main.yml             # Event handlers
 ├── meta/
 │   ├── argument_specs.yml   # Declarative argument specifications & static type validations
-│   └── main.yml             # Role metadata and Galaxy information
+│   ├── main.yml             # Role metadata and Galaxy information
+│   └── requirements.yml     # External collection dependencies (community.general)
 ├── molecule/                # Molecule testing framework
 │   └── default/             # Default testing scenario
 ├── tasks/
