@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Bashrc Configuration Tasks
+# Ansible Role: OS Customize - Tasks: Bashrc
 # =============================================================================
 # These tasks manage the insertion of a standardized, colored, and safe block
 # into user and skeleton .bashrc files. The block provides color support,
@@ -22,7 +22,7 @@
     regexp: "{{ __os_customize_bashrc_marker }}"
   check_mode: true
   changed_when: false
-  register: _check_status_
+  register: __os_customize_check_status
 
 # -----------------------------------------------------------------------------
 # 2. Insert Ansible-Managed Block if Absent
@@ -53,4 +53,4 @@
       shopt -s cmdhist
     marker: "{{ __os_customize_bashrc_marker }}"
   when: >
-    _check_status_.found == 0
+    __os_customize_check_status.found == 0

@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Main Tasks
+# Ansible Role: OS Customize - Tasks: Main
 # =============================================================================
 # This is the main task file for the OS Customize role. It orchestrates the execution
 # of all role components in the correct order. Each task is tagged appropriately
@@ -56,7 +56,7 @@
 # -----------------------------------------------------------------------------
 - name: "OS Customize | block | Configure bashrc files"
   when: >
-    os_customize_configure_bashrc | default(false)
+    os_customize_configure_bashrc | default(false) | bool
   tags:
     - configure
     - bashrc
@@ -68,8 +68,8 @@
         recurse: true
         hidden: true
         depth: 2
-      register: _found_files_
+      register: __os_customize_found_bashrc_files
 
     - name: "OS Customize | include_tasks | Execute bashrc configuration"
       ansible.builtin.include_tasks: bashrc.yml
-      loop: "{{ __os_customize_bashrc_list + _found_files_.files | map(attribute='path') | list }}"
+      loop: "{{ __os_customize_bashrc_list + __os_customize_found_bashrc_files.files | map(attribute='path') | list }}"
