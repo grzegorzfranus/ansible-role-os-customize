@@ -32,6 +32,8 @@ dist/
 
 # Cache files and directories
 .cache/
+tmp/
+
 
 # Ansible local artifacts and cache
 .ansible/

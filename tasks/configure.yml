@@ -1,6 +1,6 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Configuration Tasks
+# Ansible Role: OS Customize - Tasks: Configure
 # =============================================================================
 # These tasks handle the configuration of OS customization, including banner,
 # login message, package installation, timezone setup, service management,
@@ -52,38 +52,38 @@
     update_cache: true
     state: present
   when: >
-    os_customize_configure_additional_packages | default(false)
+    os_customize_configure_additional_packages | default(false) | bool
 
 # -----------------------------------------------------------------------------
 # 4. Configure System Timezone (Optional)
 # -----------------------------------------------------------------------------
 - name: "OS Customize | block | Configure system timezone"
   when: >
-    os_customize_configure_timezone | default(false)
+    os_customize_configure_timezone | default(false) | bool
   block:
     - name: "OS Customize | stat | Check if timezone is available"
       ansible.builtin.stat:
         path: "/usr/share/zoneinfo/{{ os_customize_timezone }}"
-      register: timezone_file
+      register: __os_customize_timezone_file
 
     - name: "OS Customize | fail | Fail if timezone is not available"
       ansible.builtin.fail:
         msg: "The timezone {{ os_customize_timezone }} is not available on this system"
       when: >
-        not timezone_file.stat.exists or
-        timezone_file.stat.isdir
+        not __os_customize_timezone_file.stat.exists or
+        __os_customize_timezone_file.stat.isdir
 
     - name: "OS Customize | timezone | Set system timezone"
       community.general.timezone:
         name: "{{ os_customize_timezone }}"
-      register: timezone_changed
+      register: __os_customize_timezone_changed
       become: true
 
     - name: "OS Customize | debug | Show timezone change notification"
       ansible.builtin.debug:
         msg: "Timezone changed to {{ os_customize_timezone }}"
       when: >
-        timezone_changed.changed
+        __os_customize_timezone_changed.changed
       # noqa: no-handler
 
 # -----------------------------------------------------------------------------
@@ -92,10 +92,10 @@
 - name: "OS Customize | stat | Check if motd-news.timer exists"
   ansible.builtin.stat:
     path: "/lib/systemd/system/motd-news.timer"
-  register: _motd_news_timer_
+  register: __os_customize_motd_news_timer
   become: true
   when: >
-    os_customize_disable_motd_news | default(false)
+    os_customize_disable_motd_news | default(false) | bool
 
 - name: "OS Customize | systemd | Disable and stop motd-news.timer"
   ansible.builtin.systemd:
@@ -104,8 +104,8 @@
     enabled: false
     masked: true
   when: >
-    os_customize_disable_motd_news | default(false) and
-    _motd_news_timer_.stat.exists | default(false)
+    os_customize_disable_motd_news | default(false) | bool and
+    __os_customize_motd_news_timer.stat.exists | default(false) | bool
   become: true
 
 # -----------------------------------------------------------------------------
@@ -118,7 +118,7 @@
     state: present
     system: false
   when: >
-    os_customize_configure_ssh_group | default(false)
+    os_customize_configure_ssh_group | default(false) | bool
   become: true
 
 # -----------------------------------------------------------------------------
@@ -134,14 +134,14 @@
       ansible.builtin.find:
         paths: "/etc/apt/apt.conf.d"
         file_type: file
-      register: _apt_conf_files_
+      register: __os_customize_apt_conf_files
 
     - name: "OS Customize | replace | Update existing APT Periodic Update-Package-Lists directives"
       ansible.builtin.replace:
         path: "{{ item.path }}"
         regexp: '^\s*APT::Periodic::Update-Package-Lists\s+"[^"]*";'
         replace: 'APT::Periodic::Update-Package-Lists "{{ os_customize_apt_periodic_update_package_lists }}";'
-      loop: "{{ _apt_conf_files_.files }}"
+      loop: "{{ __os_customize_apt_conf_files.files }}"
       loop_control:
         label: "{{ item.path }}"
 
@@ -150,7 +150,7 @@
         path: "{{ item.path }}"
         regexp: '^\s*APT::Periodic::Unattended-Upgrade\s+"[^"]*";'
         replace: 'APT::Periodic::Unattended-Upgrade "{{ os_customize_apt_periodic_unattended_upgrade }}";'
-      loop: "{{ _apt_conf_files_.files }}"
+      loop: "{{ __os_customize_apt_conf_files.files }}"
       loop_control:
         label: "{{ item.path }}"
 
