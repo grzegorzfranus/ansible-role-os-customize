@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.5...v1.2.6) (2026-07-23)
+
+
+### Bug Fixes
+
+* **os-customize:** remove ansible managed header and add apt periodic config ([#21](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/21)) ([1fa1ce2](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/1fa1ce2f6abbd249d616d6e5b1578b6757e1a17e))
+
+
+### Miscellaneous
+
+* **main:** release 1.2.5 ([#19](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/19)) ([6ec2332](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/6ec23329c07ab5bc0bb61b73a5950b6803e42516))
+
 ## [1.2.5](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.4...v1.2.5) (2026-07-21)
 
 
