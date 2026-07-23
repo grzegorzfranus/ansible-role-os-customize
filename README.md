@@ -13,9 +13,9 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🛡️ **Login Banners**: Configure login banners with customizable security warning messages
 - 🚀 **Welcome Messages**: Deploy customized welcome message scripts for both Debian and EL-based systems
 - 🐚 **Shell Standardization**: Standardize and enhance .bashrc for root, skeleton, and all users
-- 🔄 **MOTD Management**: Disable MOTD news service to prevent unwanted external network messages
+- 🔄 **MOTD & APT Management**: Disable MOTD news service and configure APT periodic update / upgrade settings (`/etc/apt/apt.conf.d/`)
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
-- 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling
+- 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
 
 ## 🎯 Architecture
 
@@ -119,6 +119,9 @@ os_customize_disable_motd_news: true
 os_customize_configure_ssh_group: true
 os_customize_ssh_group_name: "sshusers"
 os_customize_ssh_group_gid: 10000
+os_customize_configure_apt_periodic: true
+os_customize_apt_periodic_update_package_lists: "0"
+os_customize_apt_periodic_unattended_upgrade: "0"
 ```
 
 ### Advanced Configuration
@@ -165,6 +168,9 @@ Customize for specific enterprise environments:
 | `os_customize_configure_ssh_group` | Enable/disable creation of a dedicated SSH users group | `true` |
 | `os_customize_ssh_group_name` | Name of the SSH users group | `"sshusers"` |
 | `os_customize_ssh_group_gid` | GID for the SSH users group | `10000` |
+| `os_customize_configure_apt_periodic` | Enable/disable configuration of APT periodic update and upgrade settings | `true` |
+| `os_customize_apt_periodic_update_package_lists` | Setting for `APT::Periodic::Update-Package-Lists` | `"0"` |
+| `os_customize_apt_periodic_unattended_upgrade` | Setting for `APT::Periodic::Unattended-Upgrade` | `"0"` |
 
 ### Internal OS Variables (Red Hat CoP Prefix)
 

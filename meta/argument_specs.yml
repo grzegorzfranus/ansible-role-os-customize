@@ -72,3 +72,18 @@ argument_specs:
         type: int
         default: 10000
         description: "Numerical GID for the dedicated SSH users group."
+
+      os_customize_configure_apt_periodic:
+        type: bool
+        default: true
+        description: "Enable or disable configuration of APT periodic update and upgrade settings."
+
+      os_customize_apt_periodic_update_package_lists:
+        type: str
+        default: "0"
+        description: "Setting for APT::Periodic::Update-Package-Lists ('0' to disable, '1' to enable)."
+
+      os_customize_apt_periodic_unattended_upgrade:
+        type: str
+        default: "0"
+        description: "Setting for APT::Periodic::Unattended-Upgrade ('0' to disable, '1' to enable)."

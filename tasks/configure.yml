@@ -13,6 +13,7 @@
 # 4. Configure system timezone (optional)
 # 5. Disable motd-news.timer service (optional)
 # 6. Create SSH users group (optional)
+# 7. Configure APT periodic settings (optional)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -119,3 +120,56 @@
   when: >
     os_customize_configure_ssh_group | default(false)
   become: true
+
+# -----------------------------------------------------------------------------
+# 7. Configure APT Periodic Settings (Optional)
+# -----------------------------------------------------------------------------
+- name: "OS Customize | block | Configure APT periodic settings"
+  when:
+    - ansible_facts['os_family'] | lower == 'debian'
+    - os_customize_configure_apt_periodic | default(false) | bool
+  become: true
+  block:
+    - name: "OS Customize | find | Locate existing APT configuration files"
+      ansible.builtin.find:
+        paths: "/etc/apt/apt.conf.d"
+        file_type: file
+      register: _apt_conf_files_
+
+    - name: "OS Customize | replace | Update existing APT Periodic Update-Package-Lists directives"
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^\s*APT::Periodic::Update-Package-Lists\s+"[^"]*";'
+        replace: 'APT::Periodic::Update-Package-Lists "{{ os_customize_apt_periodic_update_package_lists }}";'
+      loop: "{{ _apt_conf_files_.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: "OS Customize | replace | Update existing APT Periodic Unattended-Upgrade directives"
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^\s*APT::Periodic::Unattended-Upgrade\s+"[^"]*";'
+        replace: 'APT::Periodic::Unattended-Upgrade "{{ os_customize_apt_periodic_unattended_upgrade }}";'
+      loop: "{{ _apt_conf_files_.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: "OS Customize | lineinfile | Enforce APT periodic settings in /etc/apt/apt.conf.d/20auto-upgrades"
+      ansible.builtin.lineinfile:
+        path: "/etc/apt/apt.conf.d/20auto-upgrades"
+        regexp: '^\s*APT::Periodic::Update-Package-Lists'
+        line: 'APT::Periodic::Update-Package-Lists "{{ os_customize_apt_periodic_update_package_lists }}";'
+        create: true
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: "OS Customize | lineinfile | Enforce APT unattended upgrade in /etc/apt/apt.conf.d/20auto-upgrades"
+      ansible.builtin.lineinfile:
+        path: "/etc/apt/apt.conf.d/20auto-upgrades"
+        regexp: '^\s*APT::Periodic::Unattended-Upgrade'
+        line: 'APT::Periodic::Unattended-Upgrade "{{ os_customize_apt_periodic_unattended_upgrade }}";'
+        create: true
+        owner: root
+        group: root
+        mode: "0644"
