@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.6...v1.2.7) (2026-07-23)
+
+
+### Code Refactoring
+
+* **os-customize:** align role with ansible skill standards ([#23](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/23)) ([b9a4311](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/b9a431109c4c67de8d21d1704b0b6ae409ae7f2e))
+
 ## [1.2.6](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.5...v1.2.6) (2026-07-23)
 
 
