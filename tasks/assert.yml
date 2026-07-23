@@ -5,16 +5,8 @@
 # This file contains assertions to validate all role variables before execution.
 # These checks ensure that the provided variable values are of the correct type
 # and within valid ranges/options, preventing runtime errors.
-#
-# Flow:
-# 1. General Settings validation
-# 2. Timezone Configuration validation
-# 3. Additional Packages validation
-# 4. Welcome Message and Banner validation
-# 5. Bashrc Configuration validation
-# 6. MOTD News Configuration validation
-# 7. SSH User Group Configuration validation
 # =============================================================================
+
 
 # -----------------------------------------------------------------------------
 # 1. General Settings
@@ -129,3 +121,30 @@
       - os_customize_ssh_group_gid <= 65534
     fail_msg: "❌ os_customize_ssh_group_gid must be a number between 1000 and 65534"
     success_msg: "✅ SSH group GID is valid: {{ os_customize_ssh_group_gid }}"
+
+# -----------------------------------------------------------------------------
+# 8. APT Periodic Configuration
+# -----------------------------------------------------------------------------
+- name: "OS Customize | assert | Validate APT periodic configuration flag"
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_apt_periodic is defined
+      - os_customize_configure_apt_periodic is boolean
+    fail_msg: "❌ os_customize_configure_apt_periodic must be a boolean (true/false)"
+    success_msg: "✅ APT periodic configuration flag is valid: {{ os_customize_configure_apt_periodic }}"
+
+- name: "OS Customize | assert | Validate APT periodic update package lists setting"
+  ansible.builtin.assert:
+    that:
+      - os_customize_apt_periodic_update_package_lists is defined
+      - os_customize_apt_periodic_update_package_lists is string
+    fail_msg: "❌ os_customize_apt_periodic_update_package_lists must be a string ('0' or '1')"
+    success_msg: "✅ APT periodic update package lists setting is valid: {{ os_customize_apt_periodic_update_package_lists }}"
+
+- name: "OS Customize | assert | Validate APT periodic unattended upgrade setting"
+  ansible.builtin.assert:
+    that:
+      - os_customize_apt_periodic_unattended_upgrade is defined
+      - os_customize_apt_periodic_unattended_upgrade is string
+    fail_msg: "❌ os_customize_apt_periodic_unattended_upgrade must be a string ('0' or '1')"
+    success_msg: "✅ APT periodic unattended upgrade setting is valid: {{ os_customize_apt_periodic_unattended_upgrade }}"

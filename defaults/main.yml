@@ -13,6 +13,7 @@
 #   5. Bashrc Configuration
 #   6. MOTD News Configuration
 #   7. SSH User Group Configuration
+#   8. APT Periodic Configuration
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -73,3 +74,15 @@ os_customize_ssh_group_name: "sshusers"
 
 # GID for the SSH users group (high number to avoid conflicts)
 os_customize_ssh_group_gid: 10000
+
+# -----------------------------------------------------------------------------
+# 8. APT Periodic Configuration
+# -----------------------------------------------------------------------------
+# Enable/disable configuration of APT periodic update and upgrade settings
+os_customize_configure_apt_periodic: true
+
+# APT periodic update package lists setting ("0" to disable, "1" to enable)
+os_customize_apt_periodic_update_package_lists: "0"
+
+# APT periodic unattended upgrade setting ("0" to disable, "1" to enable)
+os_customize_apt_periodic_unattended_upgrade: "0"

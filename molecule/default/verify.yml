@@ -230,7 +230,42 @@
       when: _motd_timer_exists_.stat.exists
 
 # -----------------------------------------------------------------------------
-# 8. Final Summary
+# 8. APT Periodic Verification (Debian family)
+# -----------------------------------------------------------------------------
+    - name: Verify | Check APT periodic update config (Debian family)
+      ansible.builtin.command:
+        cmd: grep -q 'APT::Periodic::Update-Package-Lists "0";' /etc/apt/apt.conf.d/20auto-upgrades
+      register: _apt_periodic_update_
+      changed_when: false
+      failed_when: false
+      when: ansible_facts['os_family'] | lower == 'debian'
+
+    - name: Verify | Assert APT periodic update is disabled (Debian family)
+      ansible.builtin.assert:
+        that:
+          - _apt_periodic_update_.rc == 0
+        fail_msg: "APT::Periodic::Update-Package-Lists is not set to '0'"
+        success_msg: "APT::Periodic::Update-Package-Lists verified as disabled ('0')"
+      when: ansible_facts['os_family'] | lower == 'debian'
+
+    - name: Verify | Check APT periodic unattended upgrade config (Debian family)
+      ansible.builtin.command:
+        cmd: grep -q 'APT::Periodic::Unattended-Upgrade "0";' /etc/apt/apt.conf.d/20auto-upgrades
+      register: _apt_periodic_unattended_
+      changed_when: false
+      failed_when: false
+      when: ansible_facts['os_family'] | lower == 'debian'
+
+    - name: Verify | Assert APT periodic unattended upgrade is disabled (Debian family)
+      ansible.builtin.assert:
+        that:
+          - _apt_periodic_unattended_.rc == 0
+        fail_msg: "APT::Periodic::Unattended-Upgrade is not set to '0'"
+        success_msg: "APT::Periodic::Unattended-Upgrade verified as disabled ('0')"
+      when: ansible_facts['os_family'] | lower == 'debian'
+
+# -----------------------------------------------------------------------------
+# 9. Final Summary
 # -----------------------------------------------------------------------------
     - name: Verify | Show verification results
       ansible.builtin.debug:
@@ -246,4 +281,5 @@
           - "Bashrc: Configured for root and skel"
           - "SSH group: sshusers (GID 10000) created"
           - "MOTD news: Disabled"
+          - "APT periodic: Disabled"
           - "OS Customize role verification: PASSED"
