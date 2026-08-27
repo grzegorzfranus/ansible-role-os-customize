@@ -148,3 +148,28 @@
       - os_customize_apt_periodic_unattended_upgrade is string
     fail_msg: "❌ os_customize_apt_periodic_unattended_upgrade must be a string ('0' or '1')"
     success_msg: "✅ APT periodic unattended upgrade setting is valid: {{ os_customize_apt_periodic_unattended_upgrade }}"
+
+# -----------------------------------------------------------------------------
+# 9. Kernel Parameters (sysctl)
+# -----------------------------------------------------------------------------
+- name: "OS Customize | assert | Validate kernel parameters configuration flag"
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_sysctl is defined
+      - os_customize_configure_sysctl is boolean
+    fail_msg: "❌ os_customize_configure_sysctl must be a boolean (true/false)"
+    success_msg: "✅ Kernel parameters configuration flag is valid: {{ os_customize_configure_sysctl }}"
+
+- name: "OS Customize | assert | Validate kernel parameters file path and settings mapping"
+  ansible.builtin.assert:
+    that:
+      - os_customize_sysctl_file is defined
+      - os_customize_sysctl_file is string
+      - os_customize_sysctl_file | length > 0
+      - os_customize_sysctl_file is match('^/')
+      - os_customize_sysctl_settings is defined
+      - os_customize_sysctl_settings is mapping
+    fail_msg: "❌ os_customize_sysctl_file must be a non-empty string starting with '/' and os_customize_sysctl_settings must be a mapping"
+    success_msg: "✅ Kernel parameters file path and settings mapping are valid"
+  when: >
+    os_customize_configure_sysctl | bool
