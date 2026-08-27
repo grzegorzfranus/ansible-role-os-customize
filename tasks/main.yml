@@ -6,7 +6,7 @@
 # of all role components in the correct order. Each task is tagged appropriately
 # to allow for selective execution.
 #
-# Flow: include_vars → assert → configure → bashrc
+# Flow: include_vars → assert → configure → bashrc → sysctl
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -73,3 +73,14 @@
     - name: "OS Customize | include_tasks | Execute bashrc configuration"
       ansible.builtin.include_tasks: bashrc.yml
       loop: "{{ __os_customize_bashrc_list + __os_customize_found_bashrc_files.files | map(attribute='path') | list }}"
+
+# -----------------------------------------------------------------------------
+# 5. Kernel Parameters (Optional)
+# -----------------------------------------------------------------------------
+- name: "OS Customize | include_tasks | Execute kernel parameter configuration"
+  ansible.builtin.include_tasks: sysctl.yml
+  when: >
+    os_customize_configure_sysctl | default(false) | bool
+  tags:
+    - configure
+    - sysctl

@@ -15,6 +15,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🐚 **Shell Standardization**: Standardize and enhance .bashrc for root, skeleton, and all users
 - 🔄 **MOTD & APT Management**: Disable MOTD news service and configure APT periodic update / upgrade settings (`/etc/apt/apt.conf.d/`)
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
+- ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
 
 ## 🎯 Architecture
@@ -25,12 +26,14 @@ The role provides modular system customization tasks organized into functional a
 [Main Tasks (tasks/main.yml)]
    ├── [Assert Checks (tasks/assert.yml)]
    ├── [Configure Core OS (tasks/configure.yml)]
-   └── [Configure Shell (tasks/bashrc.yml)]
+   ├── [Configure Shell (tasks/bashrc.yml)]
+   └── [Configure Kernel Parameters (tasks/sysctl.yml)]
 ```
 
 - **Core OS Customization**: Timezone settings, security banner deployment, welcome message setup, and package updates.
 - **Access Group Setup**: Ensures a local SSH users group is present with a specific GID for policy enforcement.
 - **Shell Customization**: Appends standardized aliases, history settings, and shell prompts to global and user shell profiles.
+- **Kernel Parameter Customization**: Deploys managed sysctl settings via a drop-in file and reloads kernel parameters.
 
 ## 📋 Requirements
 
@@ -122,6 +125,9 @@ os_customize_ssh_group_gid: 10000
 os_customize_configure_apt_periodic: true
 os_customize_apt_periodic_update_package_lists: "0"
 os_customize_apt_periodic_unattended_upgrade: "0"
+os_customize_configure_sysctl: false
+os_customize_sysctl_file: "/etc/sysctl.d/60-ansible-os-customize.conf"
+os_customize_sysctl_settings: {}
 ```
 
 ### Advanced Configuration
@@ -151,6 +157,21 @@ Customize for specific enterprise environments:
     - role: grzegorzfranus.os_customize
 ```
 
+### Kernel Parameter Management (sysctl)
+
+Kernel parameter management allows deploying custom sysctl settings to a dedicated drop-in configuration file (`/etc/sysctl.d/60-ansible-os-customize.conf` by default) and applying them dynamically via `sysctl --system`.
+
+Settings are written in the order given. Because the `all` scope acts as a master switch applied to every interface, a caller that wants to keep loopback IPv6 has to list `net.ipv6.conf.lo.disable_ipv6` after `net.ipv6.conf.all.disable_ipv6`.
+
+```yaml
+os_customize_configure_sysctl: true
+os_customize_sysctl_settings:
+  net.ipv4.ip_forward: 0
+  net.ipv6.conf.all.disable_ipv6: 1
+  net.ipv6.conf.default.disable_ipv6: 1
+  net.ipv6.conf.lo.disable_ipv6: 0
+```
+
 ## 📊 Variables
 
 ### General Options
@@ -171,6 +192,9 @@ Customize for specific enterprise environments:
 | `os_customize_configure_apt_periodic` | Enable/disable configuration of APT periodic update and upgrade settings | `true` |
 | `os_customize_apt_periodic_update_package_lists` | Setting for `APT::Periodic::Update-Package-Lists` | `"0"` |
 | `os_customize_apt_periodic_unattended_upgrade` | Setting for `APT::Periodic::Unattended-Upgrade` | `"0"` |
+| `os_customize_configure_sysctl` | Enable/disable management of kernel parameters through a sysctl drop-in | `false` |
+| `os_customize_sysctl_file` | Path of the managed sysctl drop-in file | `"/etc/sysctl.d/60-ansible-os-customize.conf"` |
+| `os_customize_sysctl_settings` | Mapping of kernel parameter to value, written in the given order | `{}` |
 
 ### Internal OS Variables (Red Hat CoP Prefix)
 
@@ -220,6 +244,16 @@ cat /etc/profile.d/login.sh
 
 ```bash
 getent group sshusers
+```
+
+### Verify Kernel Parameters
+
+```bash
+# View deployed sysctl drop-in file
+cat /etc/sysctl.d/60-ansible-os-customize.conf
+
+# Check active kernel parameter value
+sysctl net.ipv4.ip_forward
 ```
 
 ## 🛡️ Security Features
@@ -285,9 +319,11 @@ ansible-role-os-customize/
 │   ├── main.yml             # Main task orchestration
 │   ├── assert.yml           # Variable validation
 │   ├── configure.yml        # System configuration and services tasks
-│   └── bashrc.yml           # .bashrc configuration
+│   ├── bashrc.yml           # .bashrc configuration
+│   └── sysctl.yml           # Kernel parameters configuration
 ├── templates/
 │   ├── banner.j2            # Login banner with security warning
+│   ├── sysctl.conf.j2       # Kernel parameters drop-in configuration
 │   └── scripts/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
@@ -309,6 +345,7 @@ All tags are prefixed with `os_customize_` or use standard Ansible tags (`always
 | `check` | Validation and verification tasks |
 | `configure` | System configuration tasks (banner, login, timezone, packages, services) |
 | `services` | Service configuration tasks (MOTD news, SSH group) |
+| `sysctl` | Kernel parameters configuration tasks |
 
 ## CI/CD Pipeline
 

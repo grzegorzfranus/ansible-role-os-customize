@@ -1,0 +1,12 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+# =============================================================================
+# Kernel Parameters
+# =============================================================================
+# Managed by the os_customize role. Values come from os_customize_sysctl_settings.
+# Applied on change by 'sysctl --system'.
+# =============================================================================
+
+{% for key, value in os_customize_sysctl_settings.items() %}
+{{ key }} = {{ value }}
+{% endfor %}
