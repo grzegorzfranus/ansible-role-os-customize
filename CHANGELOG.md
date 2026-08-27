@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.7...v1.3.0) (2026-08-27)
+
+
+### Features
+
+* manage kernel parameters through a sysctl drop-in ([#27](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/27)) ([ac57fd9](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/ac57fd9b437d0aac8d3cc510bb7f16377fc4f3e4))
+
 ## [1.2.7](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.6...v1.2.7) (2026-07-23)
 
 
