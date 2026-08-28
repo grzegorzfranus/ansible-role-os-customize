@@ -2,7 +2,8 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Bashrc
 # =============================================================================
-# Inserts a standardized shell environment block with colour support, aliases and history settings into the given .bashrc file.
+# Inserts a standardized shell environment block with colour support, aliases and history
+# settings into the given .bashrc file.
 # =============================================================================
 
 - name: OS Customize | bashrc | Check for existing managed block

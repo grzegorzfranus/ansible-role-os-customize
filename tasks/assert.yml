@@ -19,7 +19,8 @@
       - os_customize_system_admin_mail is defined
       - os_customize_system_admin_mail is string
       - os_customize_system_admin_mail | length > 0
-    fail_msg: "os_customize_system_admin_mail must be a non-empty string (e-mail address)"
+      - os_customize_system_admin_mail is match('^[^@ \\t]+@[^@ \\t]+\\.[^@ \\t]+$')
+    fail_msg: "os_customize_system_admin_mail must be a non-empty string (e-mail address, e.g., 'admin@example.com')"
     success_msg: "System administrator e-mail validated: {{ os_customize_system_admin_mail }}"
 
 # -----------------------------------------------------------------------------
@@ -41,8 +42,10 @@
       - os_customize_timezone is defined
       - os_customize_timezone is string
       - os_customize_timezone | length > 0
-    fail_msg: "os_customize_timezone must be a non-empty string (e.g., 'Europe/Warsaw')"
+      - os_customize_timezone is match('^[A-Za-z0-9+_-]+(/[A-Za-z0-9+_-]+)*$')
+    fail_msg: "os_customize_timezone must be a non-empty string (IANA identifier, e.g., 'Europe/Warsaw')"
     success_msg: "Timezone value format validated: {{ os_customize_timezone }}"
+  when: os_customize_configure_timezone | bool
 
 # -----------------------------------------------------------------------------
 # 3. Additional Packages
@@ -64,6 +67,7 @@
       - os_customize_additional_packages is sequence
     fail_msg: "os_customize_additional_packages must be a list of package names"
     success_msg: "Additional packages list validated: {{ os_customize_additional_packages | length }} entries"
+  when: os_customize_configure_additional_packages | bool
 
 # -----------------------------------------------------------------------------
 # 4. Welcome Message and Banner
@@ -125,6 +129,7 @@
       - os_customize_ssh_group_name | length > 0
     fail_msg: "os_customize_ssh_group_name must be a non-empty string (e.g., 'sshusers')"
     success_msg: "SSH group name validated: {{ os_customize_ssh_group_name }}"
+  when: os_customize_configure_ssh_group | bool
 
 - name: OS Customize | assert | Validate SSH group GID
   ansible.builtin.assert:
@@ -135,6 +140,7 @@
       - os_customize_ssh_group_gid <= 65534
     fail_msg: "os_customize_ssh_group_gid must be a number between 1000 and 65534"
     success_msg: "SSH group GID validated: {{ os_customize_ssh_group_gid }}"
+  when: os_customize_configure_ssh_group | bool
 
 # -----------------------------------------------------------------------------
 # 8. APT Periodic Configuration
@@ -154,16 +160,20 @@
     that:
       - os_customize_apt_periodic_update_package_lists is defined
       - os_customize_apt_periodic_update_package_lists is string
+      - os_customize_apt_periodic_update_package_lists in ['0', '1']
     fail_msg: "os_customize_apt_periodic_update_package_lists must be a string ('0' or '1')"
     success_msg: "APT periodic update package lists setting validated: {{ os_customize_apt_periodic_update_package_lists }}"
+  when: os_customize_configure_apt_periodic | bool
 
 - name: OS Customize | assert | Validate APT periodic unattended upgrade setting
   ansible.builtin.assert:
     that:
       - os_customize_apt_periodic_unattended_upgrade is defined
       - os_customize_apt_periodic_unattended_upgrade is string
+      - os_customize_apt_periodic_unattended_upgrade in ['0', '1']
     fail_msg: "os_customize_apt_periodic_unattended_upgrade must be a string ('0' or '1')"
     success_msg: "APT periodic unattended upgrade setting validated: {{ os_customize_apt_periodic_unattended_upgrade }}"
+  when: os_customize_configure_apt_periodic | bool
 
 # -----------------------------------------------------------------------------
 # 9. Kernel Parameters (sysctl)
