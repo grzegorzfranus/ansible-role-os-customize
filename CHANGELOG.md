@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.3.0...v2.0.0) (2026-08-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* align repository standards and role compliance ([#30](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/30))
+
+### Features
+
+* align repository standards and role compliance ([#30](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/30)) ([5cbc66d](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/5cbc66d13b76ec6d1723dde93735d897de7511f5))
+
 ## [1.3.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v1.2.7...v1.3.0) (2026-08-27)
 
 
