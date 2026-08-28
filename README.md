@@ -274,6 +274,12 @@ Configuration files are backed up automatically using Ansible's `backup: true` d
 1. Restore `.bashrc` or issue file from `.bak` timestamps created in target directories.
 2. Revert any package manager edits manually.
 
+## 🧪 Check mode behavior
+
+- Banner, login script and sysctl drop-in template rendering, along with file permission and ownership checks, run normally in Check Mode.
+- Mutating package installation, timezone changes, systemd timer masking and group creation are safely skipped.
+- The `.bashrc` managed-block detection already runs in check mode by design, so it reports without modifying any file.
+
 ## 🔧 Troubleshooting
 
 ### Timezone Errors
@@ -311,8 +317,7 @@ ansible-role-os-customize/
 │   └── main.yml             # Event handlers
 ├── meta/
 │   ├── argument_specs.yml   # Declarative argument specifications & static type validations
-│   ├── main.yml             # Role metadata and Galaxy information
-│   └── requirements.yml     # External collection dependencies (community.general)
+│   └── main.yml             # Role metadata and Galaxy information
 ├── molecule/                # Molecule testing framework
 │   └── default/             # Default testing scenario
 ├── tasks/
@@ -334,24 +339,22 @@ ansible-role-os-customize/
 
 ## 🏷️ Tags
 
-All tags are prefixed with `os_customize_` or use standard Ansible tags (`always`, `configure`, `services`).
+All tags (except `always`) are prefixed with `os_customize_` to avoid collisions. Use `--tags` to run selective parts of the role.
 
 | Tag | Description |
 |-----|-------------|
-| `always` | Tasks that always run (variable loading and validation) |
-| `setup` | Setup tasks including OS-specific variables |
-| `init` | Initial setup tasks |
-| `validate` | Variable validation tasks |
-| `check` | Validation and verification tasks |
-| `configure` | System configuration tasks (banner, login, timezone, packages, services) |
-| `services` | Service configuration tasks (MOTD news, SSH group) |
-| `sysctl` | Kernel parameters configuration tasks |
+| `always` | Tasks that always run (OS-specific variable loading and configuration assertions) |
+| `os_customize_setup` | High-level setup meta tag including all configuration task files |
+| `os_customize_validate` | Variable validation and configuration assertions |
+| `os_customize_configure` | System configuration tasks (banner, login script, packages, timezone, MOTD timer, SSH group, APT periodic) |
+| `os_customize_bashrc` | Shell environment (`.bashrc`) configuration tasks |
+| `os_customize_sysctl` | Kernel parameter drop-in configuration tasks |
 
 ## CI/CD Pipeline
 
-This repository uses centralized, reusable GitHub Actions workflows from [grzegorzfranus/github-workflows](https://github.com/grzegorzfranus/github-workflows) (`v3.0.1`) for quality assurance, security scanning, and release automation.
+This repository uses centralized, reusable GitHub Actions workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) (`@main`) for quality assurance, security scanning, and release automation.
 
-### CI Pipeline (`ansible-ci.yml@v3.0.1`)
+### CI Pipeline (`ansible-ci.yml`)
 
 Runs on every Pull Request in a two-tier gate pattern:
 
@@ -364,30 +367,59 @@ Runs on every Pull Request in a two-tier gate pattern:
 7. **Molecule Integration Tests** — executes Molecule test matrix across Ubuntu 26.04, Ubuntu 24.04, Ubuntu 22.04, Debian 13, Debian 12, Debian 11, and Rocky Linux 9 (`ansible-molecule.yml`)
 8. **Merge Check Gate** — single authoritative status check aggregating all results for branch protection
 
-### Release & Publish Pipeline (`ansible-publish.yml@v3.0.1`)
+### Release & Publish Pipeline (`ansible-publish.yml`)
 
 Automated via [Release Please](https://github.com/googleapis/release-please):
 
 1. **Push to `main`** → Release Please creates or updates a Release PR with automated changelog generation
 2. **Release PR Validation** → validates YAML syntax and actions schema before setting `Merge Check` status
 3. **Merge Release PR** → creates Git version tag and GitHub Release automatically
-4. **Ansible Galaxy Publish** → publishes tagged release to Ansible Galaxy via `ansible-publish.yml@v3.0.1` with exponential backoff retry logic
+4. **Ansible Galaxy Publish** → publishes tagged release to Ansible Galaxy via `ansible-publish.yml`
 
 ## Example Playbooks
 
+### Hardened Baseline with Kernel Parameters and Unattended Upgrades
+
 ```yaml
 ---
-- name: Customize OS Settings
-  hosts: all
+- name: Apply hardened OS baseline
+  hosts: baseline_servers
   become: true
   roles:
     - role: grzegorzfranus.os_customize
       vars:
+        os_customize_system_admin_mail: "ops@example.com"
         os_customize_configure_timezone: true
-        os_customize_timezone: "Europe/Warsaw"
-        os_customize_additional_packages:
-          - htop
-          - curl
+        os_customize_timezone: "UTC"
+        os_customize_configure_ssh_group: true
+        os_customize_ssh_group_name: "sshusers"
+        os_customize_configure_apt_periodic: true
+        os_customize_apt_periodic_update_package_lists: "1"
+        os_customize_apt_periodic_unattended_upgrade: "1"
+        os_customize_configure_sysctl: true
+        os_customize_sysctl_settings:
+          net.ipv4.ip_forward: "0"
+          net.ipv4.conf.all.accept_redirects: "0"
+          net.ipv4.conf.all.send_redirects: "0"
+          net.ipv6.conf.all.disable_ipv6: "1"
+          net.ipv6.conf.lo.disable_ipv6: "0"
+```
+
+### Minimal Shell Environment Only
+
+```yaml
+---
+- name: Apply shell environment defaults only
+  hosts: workstations
+  become: true
+  roles:
+    - role: grzegorzfranus.os_customize
+      vars:
+        os_customize_configure_welcome_message: false
+        os_customize_configure_additional_packages: false
+        os_customize_configure_ssh_group: false
+        os_customize_configure_apt_periodic: false
+        os_customize_configure_bashrc: true
 ```
 
 ## 🤝 Contributing
@@ -395,9 +427,21 @@ Automated via [Release Please](https://github.com/googleapis/release-please):
 Contributions, bug reports, and feature requests are welcome!
 
 - Fork the repository and create your branch from `main`
-- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
-- Centralized workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) version `v3.0.1` are used to run CI/CD pipelines
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+  - `feat:` — new features
+  - `fix:` — bug fixes
+  - `refactor:` — code refactoring
+  - `docs:` — documentation changes
+  - `ci:` — CI/CD pipeline updates
+  - `build:` — dependency and build configuration updates
+  - `chore:` — maintenance tasks
+  - `test:` — test additions or corrections
+  - `perf:` — performance improvements
+  - `revert:` — code reverts
+  - `style:` — code formatting and style
+- Use branch naming convention: `feature/`, `bugfix/`, `fix/`, `hotfix/`, `release/`, `chore/`, `docs/`, `refactor/`, `test/`, `build/`, `ci/`, `perf/`, `revert/`
 - Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
+- Centralized workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) are used to run CI/CD pipelines
 - Submit a pull request describing your changes (a template is available under `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md` to help structure your PR description)
 - For major changes, please open an issue first to discuss what you would like to change (issue templates for bug reports, feature requests, and tasks are available under `.github/ISSUE_TEMPLATE/`)
 

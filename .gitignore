@@ -32,8 +32,6 @@ dist/
 
 # Cache files and directories
 .cache/
-tmp/
-
 
 # Ansible local artifacts and cache
 .ansible/
@@ -53,3 +51,6 @@ Thumbs.db
 .env.local
 .env.*
 !.env.example
+
+# Temporary working directory
+tmp/

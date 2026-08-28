@@ -1,4 +1,7 @@
 ---
+# =============================================================================
+# Ansible Role: OS Customize - Galaxy Metadata
+# =============================================================================
 galaxy_info:
   role_name: os_customize
   author: Grzegorz Franus

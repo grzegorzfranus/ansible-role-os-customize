@@ -2,11 +2,11 @@
 # =============================================================================
 # Ansible Role: OS Customize - Assertions
 # =============================================================================
-# This file contains assertions to validate all role variables before execution.
-# These checks ensure that the provided variable values are of the correct type
-# and within valid ranges/options, preventing runtime errors.
+# Basic type, choice and default validation is handled declaratively by
+# meta/argument_specs.yml. This file performs the runtime-only checks that
+# cannot be expressed there: value ranges, path patterns and cross-field logic.
+# Section numbering mirrors defaults/main.yml.
 # =============================================================================
-
 
 # -----------------------------------------------------------------------------
 # 1. General Settings

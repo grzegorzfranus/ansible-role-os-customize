@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 # 1. Check for Existing Ansible-Managed Block
 # -----------------------------------------------------------------------------
-- name: "OS Customize | lineinfile | Check for existing managed block"
+- name: "OS Customize | bashrc | Check for existing managed block"
   become: true
   ansible.builtin.lineinfile:
     state: absent
@@ -27,7 +27,7 @@
 # -----------------------------------------------------------------------------
 # 2. Insert Ansible-Managed Block if Absent
 # -----------------------------------------------------------------------------
-- name: "OS Customize | blockinfile | Insert configuration block"
+- name: "OS Customize | bashrc | Insert configuration block"
   become: true
   ansible.builtin.blockinfile:
     path: "{{ item }}"
@@ -52,5 +52,6 @@
       HISTIGNORE="ls:ps:top:uptime"
       shopt -s cmdhist
     marker: "{{ __os_customize_bashrc_marker }}"
+    state: present
   when: >
     __os_customize_check_status.found == 0
