@@ -12,7 +12,7 @@
 # -----------------------------------------------------------------------------
 # 1. OS-Specific Variables
 # -----------------------------------------------------------------------------
-- name: "OS Customize | main | Gather OS specific variables"
+- name: OS Customize | main | Gather OS specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -32,7 +32,7 @@
 # -----------------------------------------------------------------------------
 # 2. Variable Validation
 # -----------------------------------------------------------------------------
-- name: "OS Customize | main | Run configuration assertions"
+- name: OS Customize | main | Run configuration assertions
   ansible.builtin.import_tasks: assert.yml
   tags:
     - always
@@ -41,7 +41,7 @@
 # -----------------------------------------------------------------------------
 # 3. System Configuration
 # -----------------------------------------------------------------------------
-- name: "OS Customize | main | Run system configuration tasks"
+- name: OS Customize | main | Run system configuration tasks
   ansible.builtin.import_tasks: configure.yml
   tags:
     - os_customize_setup
@@ -50,7 +50,7 @@
 # -----------------------------------------------------------------------------
 # 4. Bashrc Configuration (Optional)
 # -----------------------------------------------------------------------------
-- name: "OS Customize | main | Configure bashrc files"
+- name: OS Customize | main | Configure bashrc files
   when: >
     os_customize_configure_bashrc | bool
   tags:
@@ -58,7 +58,7 @@
     - os_customize_configure
     - os_customize_bashrc
   block:
-    - name: "OS Customize | main | Locate .bashrc files in home directories"
+    - name: OS Customize | main | Locate .bashrc files in home directories
       ansible.builtin.find:
         paths: "/home/"
         patterns: ".bashrc"
@@ -70,7 +70,7 @@
     # Dynamic include is required here: the task file is applied once per
     # discovered .bashrc path, so tags must be propagated explicitly via
     # 'apply' — inner tasks do not inherit tags from include_tasks.
-    - name: "OS Customize | main | Run bashrc configuration tasks"
+    - name: OS Customize | main | Run bashrc configuration tasks
       ansible.builtin.include_tasks:
         file: bashrc.yml
       args:
@@ -86,7 +86,7 @@
 # -----------------------------------------------------------------------------
 # 5. Kernel Parameters (Optional)
 # -----------------------------------------------------------------------------
-- name: "OS Customize | main | Run kernel parameter configuration tasks"
+- name: OS Customize | main | Run kernel parameter configuration tasks
   ansible.builtin.import_tasks: sysctl.yml
   when: >
     os_customize_configure_sysctl | bool

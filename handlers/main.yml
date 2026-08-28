@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Justification: Reload kernel parameters using 'sysctl --system' across all
 # drop-in files, which has no dedicated Ansible module.
-- name: "OS Customize | handlers | Reload kernel parameters"
+- name: OS Customize | handlers | Reload kernel parameters
   become: true
   ansible.builtin.command:
     cmd: sysctl --system
