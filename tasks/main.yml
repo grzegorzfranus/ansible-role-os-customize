@@ -1,18 +1,11 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Tasks: Main
+# Ansible Role: OS Customize - Tasks: Main Entrypoint
 # =============================================================================
-# This is the main task file for the OS Customize role. It orchestrates the execution
-# of all role components in the correct order. Each task is tagged appropriately
-# to allow for selective execution.
-#
 # Flow: include_vars → assert → configure → bashrc → sysctl
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. OS-Specific Variables
-# -----------------------------------------------------------------------------
-- name: "OS Customize | include_vars | Load OS-specific variables"
+- name: OS Customize | main | Gather OS specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -28,40 +21,28 @@
         - "{{ role_path }}/vars"
   tags:
     - always
-    - setup
-    - init
 
-# -----------------------------------------------------------------------------
-# 2. Variable Validation
-# -----------------------------------------------------------------------------
-- name: "OS Customize | import_tasks | Execute variable validation"
+- name: OS Customize | main | Run configuration assertions
   ansible.builtin.import_tasks: assert.yml
   tags:
     - always
-    - validate
-    - check
+    - os_customize_validate
 
-# -----------------------------------------------------------------------------
-# 3. System Configuration
-# -----------------------------------------------------------------------------
-- name: "OS Customize | import_tasks | Execute system configuration"
+- name: OS Customize | main | Run system configuration tasks
   ansible.builtin.import_tasks: configure.yml
   tags:
-    - always
-    - configure
-    - services
+    - os_customize_setup
+    - os_customize_configure
 
-# -----------------------------------------------------------------------------
-# 4. Bashrc Configuration (Optional)
-# -----------------------------------------------------------------------------
-- name: "OS Customize | block | Configure bashrc files"
+- name: OS Customize | main | Configure bashrc files
   when: >
-    os_customize_configure_bashrc | default(false) | bool
+    os_customize_configure_bashrc | bool
   tags:
-    - configure
-    - bashrc
+    - os_customize_setup
+    - os_customize_configure
+    - os_customize_bashrc
   block:
-    - name: "OS Customize | find | Locate .bashrc files in home directories"
+    - name: OS Customize | main | Locate .bashrc files in home directories
       ansible.builtin.find:
         paths: "/home/"
         patterns: ".bashrc"
@@ -70,17 +51,27 @@
         depth: 2
       register: __os_customize_found_bashrc_files
 
-    - name: "OS Customize | include_tasks | Execute bashrc configuration"
-      ansible.builtin.include_tasks: bashrc.yml
+    # Dynamic include is required here: the task file is applied once per
+    # discovered .bashrc path, so tags must be propagated explicitly via
+    # 'apply' — inner tasks do not inherit tags from include_tasks.
+    - name: OS Customize | main | Run bashrc configuration tasks
+      ansible.builtin.include_tasks:
+        file: bashrc.yml
+      args:
+        apply:
+          tags:
+            - os_customize_setup
+            - os_customize_configure
+            - os_customize_bashrc
       loop: "{{ __os_customize_bashrc_list + __os_customize_found_bashrc_files.files | map(attribute='path') | list }}"
+      loop_control:
+        label: "{{ item }}"
 
-# -----------------------------------------------------------------------------
-# 5. Kernel Parameters (Optional)
-# -----------------------------------------------------------------------------
-- name: "OS Customize | include_tasks | Execute kernel parameter configuration"
-  ansible.builtin.include_tasks: sysctl.yml
+- name: OS Customize | main | Run kernel parameter configuration tasks
+  ansible.builtin.import_tasks: sysctl.yml
   when: >
-    os_customize_configure_sysctl | default(false) | bool
+    os_customize_configure_sysctl | bool
   tags:
-    - configure
-    - sysctl
+    - os_customize_setup
+    - os_customize_configure
+    - os_customize_sysctl

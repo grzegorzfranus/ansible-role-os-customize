@@ -1,16 +1,13 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Tasks: Handlers
+# Ansible Role: OS Customize - Handlers
 # =============================================================================
-# Event handlers for the OS Customize role.
+# Kernel parameter reload handler for the OS Customize role.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. Kernel Parameters
-# -----------------------------------------------------------------------------
 # Justification: Reload kernel parameters using 'sysctl --system' across all
 # drop-in files, which has no dedicated Ansible module.
-- name: "OS Customize | handlers | Reload kernel parameters"
+- name: OS Customize | handlers | Reload kernel parameters
   become: true
   ansible.builtin.command:
     cmd: sysctl --system

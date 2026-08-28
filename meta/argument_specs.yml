@@ -87,3 +87,18 @@ argument_specs:
         type: str
         default: "0"
         description: "Setting for APT::Periodic::Unattended-Upgrade ('0' to disable, '1' to enable)."
+
+      os_customize_configure_sysctl:
+        type: bool
+        default: false
+        description: "Enable or disable management of kernel parameters through a sysctl drop-in file."
+
+      os_customize_sysctl_file:
+        type: str
+        default: "/etc/sysctl.d/60-ansible-os-customize.conf"
+        description: "Absolute path of the drop-in file the role manages under /etc/sysctl.d/."
+
+      os_customize_sysctl_settings:
+        type: dict
+        default: {}
+        description: "Mapping of kernel parameter name to value, written in the order given."
