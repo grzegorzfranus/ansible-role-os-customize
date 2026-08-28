@@ -2,22 +2,9 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Configure
 # =============================================================================
-# These tasks handle the configuration of OS customization, including banner,
-# login message, package installation, timezone setup, service management,
-# and user group configuration.
-#
-# Flow:
-# 1. Deploy login banner and login message script (optional)
-# 2. Install additional packages (optional)
-# 3. Configure system timezone (optional)
-# 4. Disable motd-news.timer service (optional)
-# 5. Create SSH users group (optional)
-# 6. Configure APT periodic settings (optional)
+# Deploys the login banner and welcome script, installs additional packages, sets the timezone, disables the MOTD news timer, creates the SSH users group and enforces APT periodic settings.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. Deploy Welcome Message and Login Banner (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Deploy welcome message and login banner
   become: true
   when: >
@@ -41,9 +28,6 @@
         mode: "0644"
         backup: true
 
-# -----------------------------------------------------------------------------
-# 2. Install Additional Packages (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Install additional packages
   become: true
   ansible.builtin.package:
@@ -57,9 +41,6 @@
   when: >
     os_customize_configure_additional_packages | bool
 
-# -----------------------------------------------------------------------------
-# 3. Configure System Timezone (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Configure system timezone
   when: >
     os_customize_configure_timezone | bool
@@ -91,9 +72,6 @@
         __os_customize_timezone_changed.changed
       # noqa: no-handler
 
-# -----------------------------------------------------------------------------
-# 4. Disable MOTD News Service (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Disable MOTD news timer
   become: true
   when: >
@@ -113,9 +91,6 @@
       when: >
         __os_customize_motd_news_timer.stat.exists | bool
 
-# -----------------------------------------------------------------------------
-# 5. Create SSH Users Group (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Create dedicated SSH users group
   become: true
   ansible.builtin.group:
@@ -126,9 +101,6 @@
   when: >
     os_customize_configure_ssh_group | bool
 
-# -----------------------------------------------------------------------------
-# 6. Configure APT Periodic Settings (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | configure | Configure APT periodic settings
   become: true
   when:

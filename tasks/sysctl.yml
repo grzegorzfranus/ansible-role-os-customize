@@ -2,13 +2,9 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Kernel Parameters
 # =============================================================================
-# This file creates the parent directory and deploys the sysctl drop-in
-# configuration file to manage kernel parameters.
+# Creates the sysctl drop-in directory and deploys the managed kernel parameter file.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. Ensure Kernel Parameter Drop-In Directory Exists
-# -----------------------------------------------------------------------------
 - name: OS Customize | sysctl | Ensure kernel parameter drop-in directory exists
   become: true
   ansible.builtin.file:
@@ -18,9 +14,6 @@
     group: root
     mode: "0755"
 
-# -----------------------------------------------------------------------------
-# 2. Deploy Managed Kernel Parameter Drop-In
-# -----------------------------------------------------------------------------
 - name: OS Customize | sysctl | Deploy managed kernel parameter drop-in
   become: true
   ansible.builtin.template:

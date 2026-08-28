@@ -2,18 +2,9 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Bashrc
 # =============================================================================
-# These tasks manage the insertion of a standardized, colored, and safe block
-# into user and skeleton .bashrc files. The block provides color support,
-# useful aliases, and improved shell history settings.
-#
-# Flow:
-# 1. Check if the Ansible-managed block is already present in each .bashrc file
-# 2. Insert the block if not present
+# Inserts a standardized shell environment block with colour support, aliases and history settings into the given .bashrc file.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. Check for Existing Ansible-Managed Block
-# -----------------------------------------------------------------------------
 - name: OS Customize | bashrc | Check for existing managed block
   become: true
   ansible.builtin.lineinfile:
@@ -24,9 +15,6 @@
   changed_when: false
   register: __os_customize_check_status
 
-# -----------------------------------------------------------------------------
-# 2. Insert Ansible-Managed Block if Absent
-# -----------------------------------------------------------------------------
 - name: OS Customize | bashrc | Insert configuration block
   become: true
   ansible.builtin.blockinfile:

@@ -1,17 +1,10 @@
 ---
 # =============================================================================
-# Ansible Role: OS Customize - Tasks: Main
+# Ansible Role: OS Customize - Tasks: Main Entrypoint
 # =============================================================================
-# This is the main task file for the OS Customize role. It orchestrates the execution
-# of all role components in the correct order. Each task is tagged appropriately
-# to allow for selective execution.
-#
 # Flow: include_vars → assert → configure → bashrc → sysctl
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1. OS-Specific Variables
-# -----------------------------------------------------------------------------
 - name: OS Customize | main | Gather OS specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
@@ -29,27 +22,18 @@
   tags:
     - always
 
-# -----------------------------------------------------------------------------
-# 2. Variable Validation
-# -----------------------------------------------------------------------------
 - name: OS Customize | main | Run configuration assertions
   ansible.builtin.import_tasks: assert.yml
   tags:
     - always
     - os_customize_validate
 
-# -----------------------------------------------------------------------------
-# 3. System Configuration
-# -----------------------------------------------------------------------------
 - name: OS Customize | main | Run system configuration tasks
   ansible.builtin.import_tasks: configure.yml
   tags:
     - os_customize_setup
     - os_customize_configure
 
-# -----------------------------------------------------------------------------
-# 4. Bashrc Configuration (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | main | Configure bashrc files
   when: >
     os_customize_configure_bashrc | bool
@@ -83,9 +67,6 @@
       loop_control:
         label: "{{ item }}"
 
-# -----------------------------------------------------------------------------
-# 5. Kernel Parameters (Optional)
-# -----------------------------------------------------------------------------
 - name: OS Customize | main | Run kernel parameter configuration tasks
   ansible.builtin.import_tasks: sysctl.yml
   when: >
