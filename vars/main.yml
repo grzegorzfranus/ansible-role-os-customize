@@ -7,6 +7,7 @@
 #
 # Sections:
 #   1. Bashrc Configuration
+#   2. Banner and Login Script Paths
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -19,3 +20,12 @@ __os_customize_bashrc_marker: "# BEGIN ANSIBLE MANAGED BLOCK"
 __os_customize_bashrc_list:
   - /root/.bashrc
   - /etc/skel/.bashrc
+
+# -----------------------------------------------------------------------------
+# 2. Banner and Login Script Paths
+# -----------------------------------------------------------------------------
+# Path to the login banner file (currently identical across all supported distributions)
+__os_customize_welcome_banner_path: "/etc/profile.d/banner"
+
+# Path to the login message script (currently identical across all supported distributions)
+__os_customize_welcome_script_path: "/etc/profile.d/login.sh"

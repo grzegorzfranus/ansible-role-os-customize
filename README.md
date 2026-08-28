@@ -198,7 +198,7 @@ os_customize_sysctl_settings:
 
 ### Internal OS Variables (Red Hat CoP Prefix)
 
-These internal variables are managed in `vars/*.yml` using double-underscore prefixes and are not intended for direct user override:
+These internal variables are managed in `vars/main.yml` using double-underscore prefixes and are not intended for direct user override:
 
 | Variable | Description | Value |
 |----------|-------------|-------|
@@ -333,7 +333,7 @@ ansible-role-os-customize/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
 ├── vars/
-│   └── *.yml                # OS-specific and internal variables
+│   └── main.yml             # Internal (non-overridable) variables
 └── requirements.yml         # External collection dependencies (community.general)
 ```
 

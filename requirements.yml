@@ -6,5 +6,7 @@
 # OS Customize role.
 # =============================================================================
 
+# Provides the community.general.timezone module used by this role; version pinned for supply-chain integrity.
 collections:
   - name: community.general
+    version: "13.3.0"

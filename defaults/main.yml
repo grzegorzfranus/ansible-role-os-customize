@@ -32,24 +32,29 @@
 # Role execution control and basic service configuration
 
 # System administrator e-mail address (used in banners, notifications, etc.)
+# Valid values: e-mail address string
 os_customize_system_admin_mail: "admin@example.com"
 
 # -----------------------------------------------------------------------------
 # 2. Timezone Configuration
 # -----------------------------------------------------------------------------
 # Enable/disable timezone configuration
+# Valid values: true, false
 os_customize_configure_timezone: false
 
 # Timezone to set on the system (e.g., "Europe/Warsaw")
+# Valid values: IANA timezone identifier string e.g. Europe/Warsaw
 os_customize_timezone: "Europe/Warsaw"
 
 # -----------------------------------------------------------------------------
 # 3. Additional Packages
 # -----------------------------------------------------------------------------
 # Enable/disable installation of additional packages
+# Valid values: true, false
 os_customize_configure_additional_packages: true
 
 # List of additional packages to install
+# Valid values: list of package name strings
 os_customize_additional_packages:
   - bc
   - vim
@@ -59,56 +64,68 @@ os_customize_additional_packages:
 # 4. Welcome Message and Banner
 # -----------------------------------------------------------------------------
 # Enable/disable configuration of welcome message and login banner
+# Valid values: true, false
 os_customize_configure_welcome_message: true
 
 # -----------------------------------------------------------------------------
 # 5. Bashrc Configuration
 # -----------------------------------------------------------------------------
 # Enable/disable configuration of .bashrc files
+# Valid values: true, false
 os_customize_configure_bashrc: true
 
 # -----------------------------------------------------------------------------
 # 6. MOTD News Configuration
 # -----------------------------------------------------------------------------
 # Enable/disable disabling of motd-news.timer service
+# Valid values: true, false
 os_customize_disable_motd_news: true
 
 # -----------------------------------------------------------------------------
 # 7. SSH User Group Configuration
 # -----------------------------------------------------------------------------
 # Enable/disable creation of a dedicated SSH users group
+# Valid values: true, false
 os_customize_configure_ssh_group: true
 
 # Name of the SSH users group
+# Valid values: group name string
 os_customize_ssh_group_name: "sshusers"
 
 # GID for the SSH users group (high number to avoid conflicts)
+# Valid values: integer between 1000 and 65534
 os_customize_ssh_group_gid: 10000
 
 # -----------------------------------------------------------------------------
 # 8. APT Periodic Configuration
 # -----------------------------------------------------------------------------
 # Enable/disable configuration of APT periodic update and upgrade settings
+# Valid values: true, false
 os_customize_configure_apt_periodic: true
 
 # APT periodic update package lists setting ("0" to disable, "1" to enable)
+# Valid values: "0" (disabled), "1" (enabled)
 os_customize_apt_periodic_update_package_lists: "0"
 
 # APT periodic unattended upgrade setting ("0" to disable, "1" to enable)
+# Valid values: "0" (disabled), "1" (enabled)
 os_customize_apt_periodic_unattended_upgrade: "0"
 
 # -----------------------------------------------------------------------------
 # 9. Kernel Parameters (sysctl)
 # -----------------------------------------------------------------------------
 # Enable/disable management of kernel parameters through a sysctl drop-in file
+# Valid values: true, false
 os_customize_configure_sysctl: false
 
 # Path of the drop-in file the role manages. Kept under /etc/sysctl.d/ and namespaced so the
 # role never edits /etc/sysctl.conf or a drop-in owned by another tool.
+# Valid values: absolute file path string under /etc/sysctl.d/
 os_customize_sysctl_file: "/etc/sysctl.d/60-ansible-os-customize.conf"
 
 # Kernel parameters to apply, as a mapping of parameter name to value.
 # Settings are written in the order given. Order matters for interface-scoped parameters:
 # the 'all' scope acts as a master switch applied to every interface, so a caller keeping
 # loopback IPv6 must list net.ipv6.conf.lo.disable_ipv6 after net.ipv6.conf.all.disable_ipv6.
+# Valid values: mapping of kernel parameter name to value string
 os_customize_sysctl_settings: {}
