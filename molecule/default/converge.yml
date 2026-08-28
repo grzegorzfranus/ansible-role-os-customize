@@ -1,3 +1,4 @@
+---
 # =============================================================================
 # Ansible Role: OS Customize - Molecule Convergence Playbook
 # =============================================================================
@@ -13,7 +14,6 @@
 # 3. Apply OS Customize role
 # =============================================================================
 
----
 # -----------------------------------------------------------------------------
 # 1. Pre-Tasks Setup
 # -----------------------------------------------------------------------------
@@ -70,3 +70,8 @@
         os_customize_configure_ssh_group: true
         os_customize_ssh_group_name: "sshusers"
         os_customize_ssh_group_gid: 10000
+        os_customize_configure_sysctl: true
+        os_customize_sysctl_file: "/etc/sysctl.d/60-ansible-os-customize.conf"
+        os_customize_sysctl_settings:
+          net.ipv4.ip_forward: "0"
+          net.ipv4.conf.all.accept_redirects: "0"

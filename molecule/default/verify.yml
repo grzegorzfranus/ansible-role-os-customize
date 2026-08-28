@@ -10,6 +10,8 @@
 # - Bashrc configuration
 # - SSH user group creation
 # - MOTD news service status
+# - APT periodic update and unattended upgrade settings
+# - Kernel parameter (sysctl) drop-in file and applied values
 #
 # Flow:
 # 1. Load variables and gather facts
@@ -19,6 +21,8 @@
 # 5. Verify bashrc configuration
 # 6. Verify SSH group
 # 7. Verify MOTD news service
+# 8. Verify APT periodic settings
+# 9. Verify kernel parameters (sysctl)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -34,7 +38,7 @@
 
   tasks:
     - name: Verify | Gather OS specific variables
-      include_vars: "{{ lookup('first_found', params) }}"
+      ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
       vars:
         params:
           files:
@@ -265,7 +269,36 @@
       when: ansible_facts['os_family'] | lower == 'debian'
 
 # -----------------------------------------------------------------------------
-# 9. Final Summary
+# 9. Kernel Parameters (sysctl) Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if sysctl drop-in file exists
+      ansible.builtin.stat:
+        path: /etc/sysctl.d/60-ansible-os-customize.conf
+      register: _sysctl_file_
+
+    - name: Verify | Assert sysctl drop-in file exists and has correct mode
+      ansible.builtin.assert:
+        that:
+          - _sysctl_file_.stat.exists
+          - _sysctl_file_.stat.mode == "0644"
+        fail_msg: "Sysctl drop-in file does not exist or has incorrect mode"
+        success_msg: "Sysctl drop-in file exists with mode 0644"
+
+    - name: Verify | Read active net.ipv4.ip_forward kernel parameter
+      ansible.builtin.command:
+        cmd: sysctl -n net.ipv4.ip_forward
+      register: _sysctl_ip_forward_
+      changed_when: false
+
+    - name: Verify | Assert net.ipv4.ip_forward is set to 0
+      ansible.builtin.assert:
+        that:
+          - _sysctl_ip_forward_.stdout | trim == "0"
+        fail_msg: "Kernel parameter net.ipv4.ip_forward is not set to 0"
+        success_msg: "Kernel parameter net.ipv4.ip_forward is verified as 0"
+
+# -----------------------------------------------------------------------------
+# 10. Final Summary
 # -----------------------------------------------------------------------------
     - name: Verify | Show verification results
       ansible.builtin.debug:
@@ -282,4 +315,5 @@
           - "SSH group: sshusers (GID 10000) created"
           - "MOTD news: Disabled"
           - "APT periodic: Disabled"
+          - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
           - "OS Customize role verification: PASSED"
