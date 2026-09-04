@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.0.1...v2.1.0) (2026-09-04)
+
+
+### Features
+
+* add optional Node.js, npm and Corepack installation from NodeSource ([#35](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/35)) ([#36](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/36)) ([034962d](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/034962d1db44b6d8c180789f9dc1c3a38c88b646))
+
 ## [2.0.1](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.0.0...v2.0.1) (2026-08-28)
 
 
