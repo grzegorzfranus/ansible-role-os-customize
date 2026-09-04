@@ -12,6 +12,7 @@
 # - MOTD news service status
 # - APT periodic update and unattended upgrade settings
 # - Kernel parameter (sysctl) drop-in file and applied values
+# - Node.js runtime, npm and Corepack package managers
 #
 # Flow:
 # 1. Load variables and gather facts
@@ -23,6 +24,7 @@
 # 7. Verify MOTD news service
 # 8. Verify APT periodic settings
 # 9. Verify kernel parameters (sysctl)
+# 10. Verify Node.js, npm and Corepack
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -317,3 +319,119 @@
           - "APT periodic: Disabled"
           - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
           - "OS Customize role verification: PASSED"
+
+# -----------------------------------------------------------------------------
+# 10. Node.js, npm and Corepack Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check NodeSource apt keyring (Debian)
+      ansible.builtin.stat:
+        path: "{{ __os_customize_nodejs_apt_keyring_path }}"
+      register: _nodejs_keyring_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert NodeSource apt keyring is deployed (Debian)
+      ansible.builtin.assert:
+        that:
+          - _nodejs_keyring_.stat.exists
+          - _nodejs_keyring_.stat.mode == "0644"
+        fail_msg: "NodeSource keyring missing or has wrong permissions at {{ __os_customize_nodejs_apt_keyring_path }}"
+        success_msg: "NodeSource keyring verified at {{ __os_customize_nodejs_apt_keyring_path }}"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Read NodeSource deb822 repository file (Debian)
+      ansible.builtin.slurp:
+        src: "/etc/apt/sources.list.d/{{ __os_customize_nodejs_apt_repo_name }}.sources"
+      register: _nodejs_sources_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert NodeSource repository targets the requested release line (Debian)
+      ansible.builtin.assert:
+        that:
+          - "'nodistro' in (_nodejs_sources_.content | b64decode)"
+          - "'node_24.x' in (_nodejs_sources_.content | b64decode)"
+        fail_msg: "NodeSource deb822 repository does not target node_24.x/nodistro"
+        success_msg: "NodeSource deb822 repository verified for node_24.x/nodistro"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Check NodeSource apt pin (Debian)
+      ansible.builtin.stat:
+        path: "{{ __os_customize_nodejs_apt_preferences_path }}"
+      register: _nodejs_pin_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert NodeSource apt pin is deployed (Debian)
+      ansible.builtin.assert:
+        that:
+          - _nodejs_pin_.stat.exists
+        fail_msg: "NodeSource apt pin missing at {{ __os_customize_nodejs_apt_preferences_path }}"
+        success_msg: "NodeSource apt pin verified at {{ __os_customize_nodejs_apt_preferences_path }}"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Check NodeSource yum repository (RedHat)
+      ansible.builtin.stat:
+        path: "/etc/yum.repos.d/{{ __os_customize_nodejs_yum_repo_name }}.repo"
+      register: _nodejs_yum_repo_
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Verify | Assert NodeSource yum repository is configured (RedHat)
+      ansible.builtin.assert:
+        that:
+          - _nodejs_yum_repo_.stat.exists
+        fail_msg: "NodeSource yum repository missing at /etc/yum.repos.d/{{ __os_customize_nodejs_yum_repo_name }}.repo"
+        success_msg: "NodeSource yum repository verified"
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Verify | Query Node.js runtime version
+      ansible.builtin.command:
+        cmd: "{{ __os_customize_nodejs_bin_dir }}/node --version"
+      register: _nodejs_version_
+      changed_when: false
+
+    - name: Verify | Assert Node.js runtime comes from the requested release line
+      ansible.builtin.assert:
+        that:
+          - _nodejs_version_.stdout is match('^v24\.')
+        fail_msg: "Unexpected Node.js version: {{ _nodejs_version_.stdout }}"
+        success_msg: "Node.js runtime verified: {{ _nodejs_version_.stdout }}"
+
+    - name: Verify | Query npm version
+      ansible.builtin.command:
+        cmd: "{{ __os_customize_nodejs_bin_dir }}/npm --version"
+      register: _npm_version_
+      changed_when: false
+
+    - name: Verify | Assert npm is available
+      ansible.builtin.assert:
+        that:
+          - _npm_version_.stdout | length > 0
+        fail_msg: "npm did not report a version"
+        success_msg: "npm verified: {{ _npm_version_.stdout }}"
+
+    - name: Verify | Query globally installed npm packages
+      ansible.builtin.command:
+        cmd: "{{ __os_customize_nodejs_bin_dir }}/npm ls --global --depth=0"
+      register: _npm_global_
+      changed_when: false
+
+    - name: Verify | Assert requested global npm package is installed
+      ansible.builtin.assert:
+        that:
+          - "'semver' in _npm_global_.stdout"
+        fail_msg: "Global npm package 'semver' is not installed"
+        success_msg: "Global npm package 'semver' verified"
+
+    - name: Verify | Query Yarn version activated through Corepack
+      ansible.builtin.command:
+        cmd: "{{ __os_customize_nodejs_bin_dir }}/yarn --version"
+      register: _yarn_version_
+      changed_when: false
+
+    - name: Verify | Assert Yarn is available through Corepack
+      ansible.builtin.assert:
+        that:
+          - _yarn_version_.stdout | length > 0
+          - _yarn_version_.stdout is version('2.0.0', '>=')
+        fail_msg: >-
+          Yarn reports {{ _yarn_version_.stdout }}; 'corepack prepare yarn@stable --activate' did not run,
+          leaving Corepack's bundled 1.x known-good release in place
+        success_msg: "Yarn verified through Corepack: {{ _yarn_version_.stdout }}"

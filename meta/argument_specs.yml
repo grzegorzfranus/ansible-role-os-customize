@@ -102,3 +102,102 @@ argument_specs:
         type: dict
         default: {}
         description: "Mapping of kernel parameter name to value, written in the order given."
+
+      os_customize_configure_nodejs:
+        type: bool
+        default: false
+        description: "Enable or disable installation of Node.js from the official NodeSource repository."
+
+      os_customize_nodejs_major_version:
+        type: str
+        default: "24"
+        description: "Major Node.js release line to track, mapped to the NodeSource 'node_<major>.x' repository."
+
+      os_customize_nodejs_version:
+        type: str
+        default: ""
+        description: "Exact NodeSource package version to pin, or an empty string for the newest build in the major line."
+
+      os_customize_nodejs_package_state:
+        type: str
+        default: "present"
+        choices:
+          - present
+          - latest
+        description: "Package state applied to the nodejs package."
+
+      os_customize_nodejs_apt_repo_base_uri:
+        type: str
+        default: "https://deb.nodesource.com"
+        description: "Base URI of the NodeSource APT repository, overridable for an internal mirror."
+
+      os_customize_nodejs_apt_key_url:
+        type: str
+        default: "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
+        description: "URL of the ASCII-armored NodeSource signing key used by APT."
+
+      os_customize_nodejs_yum_repo_base_uri:
+        type: str
+        default: "https://rpm.nodesource.com"
+        description: "Base URI of the NodeSource RPM repository used on the Enterprise Linux family."
+
+      os_customize_nodejs_yum_key_url:
+        type: str
+        default: "https://rpm.nodesource.com/gpgkey/ns-operations-public.key"
+        description: "URL of the NodeSource signing key used by DNF/YUM."
+
+      os_customize_nodejs_apt_pin:
+        type: bool
+        default: true
+        description: "Enable or disable the APT pin giving NodeSource packages priority over the distribution's nodejs package."
+
+      os_customize_nodejs_apt_pin_priority:
+        type: int
+        default: 600
+        description: "APT pin priority applied to packages originating from the NodeSource repository."
+
+      os_customize_configure_npm:
+        type: bool
+        default: false
+        description: "Enable or disable npm management; requires os_customize_configure_nodejs."
+
+      os_customize_npm_version:
+        type: str
+        default: ""
+        description: "Global npm version to install, or an empty string to keep the npm bundled with the nodejs package."
+
+      os_customize_npm_global_packages:
+        type: list
+        elements: dict
+        default: []
+        description: "Global npm packages to install."
+        options:
+          name:
+            type: str
+            required: true
+            description: "Name of the npm package."
+          version:
+            type: str
+            description: "Optional exact version of the npm package."
+
+      os_customize_configure_corepack:
+        type: bool
+        default: false
+        description: "Enable or disable Corepack shims; requires os_customize_configure_nodejs and a Node.js major version below 25."
+
+      os_customize_corepack_packages:
+        type: list
+        elements: dict
+        default:
+          - name: "yarn"
+            version: "stable"
+        description: "Package managers activated through 'corepack prepare <name>@<version> --activate'."
+        options:
+          name:
+            type: str
+            required: true
+            description: "Name of the package manager, for example 'yarn' or 'pnpm'."
+          version:
+            type: str
+            required: true
+            description: "Version or dist-tag passed to corepack, for example 'stable'."

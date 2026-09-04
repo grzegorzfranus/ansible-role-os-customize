@@ -201,3 +201,176 @@
     success_msg: "Kernel parameter file path and settings mapping validated"
   when: >
     os_customize_configure_sysctl | bool
+
+# -----------------------------------------------------------------------------
+# 10. Node.js Runtime (NodeSource)
+# -----------------------------------------------------------------------------
+# Validates the Node.js configuration flag, release line, package state, repository
+# endpoints, APT pin settings and cross-field consistency with additional packages.
+
+- name: OS Customize | assert | Validate Node.js configuration flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_nodejs is defined
+      - os_customize_configure_nodejs is boolean
+    fail_msg: "os_customize_configure_nodejs must be a boolean (true/false)"
+    success_msg: "Node.js configuration flag validated: {{ os_customize_configure_nodejs }}"
+
+- name: OS Customize | assert | Validate Node.js major version
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_major_version is defined
+      - os_customize_nodejs_major_version is string
+      - os_customize_nodejs_major_version | length > 0
+      - os_customize_nodejs_major_version is match('^[0-9]{1,3}$')
+      - os_customize_nodejs_major_version | int >= 18
+    fail_msg: "os_customize_nodejs_major_version must be a numeric string of a supported release line (18 or newer), e.g. '24'"
+    success_msg: "Node.js major version validated: {{ os_customize_nodejs_major_version }}"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate Node.js package version pin
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_version is defined
+      - os_customize_nodejs_version is string
+      - os_customize_nodejs_version | length == 0 or os_customize_nodejs_version is match('^[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.~+]+$')
+    fail_msg: "os_customize_nodejs_version must be empty or a NodeSource package version, e.g. '24.20.0-1nodesource1'"
+    success_msg: "Node.js package version pin validated: {{ os_customize_nodejs_version | default('newest in major line', true) }}"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate Node.js package state
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_package_state is defined
+      - os_customize_nodejs_package_state is string
+      - os_customize_nodejs_package_state in ['present', 'latest']
+    fail_msg: "os_customize_nodejs_package_state must be one of 'present' or 'latest'"
+    success_msg: "Node.js package state validated: {{ os_customize_nodejs_package_state }}"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate NodeSource repository endpoints
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_apt_repo_base_uri is match('^https?://')
+      - os_customize_nodejs_apt_key_url is match('^https?://')
+      - os_customize_nodejs_yum_repo_base_uri is match('^https?://')
+      - os_customize_nodejs_yum_key_url is match('^https?://')
+    fail_msg: "NodeSource repository and key URLs must be http(s) URLs"
+    success_msg: "NodeSource repository endpoints validated"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate Node.js APT pin settings
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_apt_pin is boolean
+      - os_customize_nodejs_apt_pin_priority is number
+      - os_customize_nodejs_apt_pin_priority >= 1
+      - os_customize_nodejs_apt_pin_priority <= 1000
+    fail_msg: "os_customize_nodejs_apt_pin must be a boolean and os_customize_nodejs_apt_pin_priority a number between 1 and 1000"
+    success_msg: "Node.js APT pin settings validated: priority {{ os_customize_nodejs_apt_pin_priority }}"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate Node.js target architecture
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['architecture'] in __os_customize_nodejs_supported_architectures
+    fail_msg: "NodeSource publishes Node.js only for {{ __os_customize_nodejs_supported_architectures | join(', ') }}, this host reports {{ ansible_facts['architecture'] }}"
+    success_msg: "Node.js target architecture validated: {{ ansible_facts['architecture'] }}"
+  when: os_customize_configure_nodejs | bool
+
+- name: OS Customize | assert | Validate Node.js does not collide with additional packages
+  ansible.builtin.assert:
+    that:
+      - "'nodejs' not in os_customize_additional_packages"
+    fail_msg: >-
+      Remove 'nodejs' from os_customize_additional_packages; it installs the distribution build
+      before the NodeSource repository is configured. Use os_customize_configure_nodejs instead.
+    success_msg: "No collision between Node.js configuration and additional packages"
+  when:
+    - os_customize_configure_nodejs | bool
+    - os_customize_configure_additional_packages | bool
+
+# -----------------------------------------------------------------------------
+# 11. npm Package Manager
+# -----------------------------------------------------------------------------
+# Validates the npm configuration flag, requested npm version and global package list.
+
+- name: OS Customize | assert | Validate npm configuration flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_npm is defined
+      - os_customize_configure_npm is boolean
+    fail_msg: "os_customize_configure_npm must be a boolean (true/false)"
+    success_msg: "npm configuration flag validated: {{ os_customize_configure_npm }}"
+
+- name: OS Customize | assert | Validate npm requires Node.js
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_nodejs | bool
+    fail_msg: "os_customize_configure_npm requires os_customize_configure_nodejs to be enabled"
+    success_msg: "npm prerequisite validated: Node.js configuration is enabled"
+  when: os_customize_configure_npm | bool
+
+- name: OS Customize | assert | Validate npm version
+  ansible.builtin.assert:
+    that:
+      - os_customize_npm_version is defined
+      - os_customize_npm_version is string
+      - os_customize_npm_version | length == 0 or os_customize_npm_version == 'latest' or os_customize_npm_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+    fail_msg: "os_customize_npm_version must be empty, 'latest' or a semantic version, e.g. '11.6.0'"
+    success_msg: "npm version validated: {{ os_customize_npm_version | default('bundled', true) }}"
+  when: os_customize_configure_npm | bool
+
+- name: OS Customize | assert | Validate npm global packages list
+  ansible.builtin.assert:
+    that:
+      - os_customize_npm_global_packages is defined
+      - os_customize_npm_global_packages is sequence
+      - os_customize_npm_global_packages | rejectattr('name', 'defined') | list | length == 0
+    fail_msg: "os_customize_npm_global_packages must be a list of mappings, each with a 'name' key"
+    success_msg: "npm global packages list validated: {{ os_customize_npm_global_packages | length }} entries"
+  when: os_customize_configure_npm | bool
+
+# -----------------------------------------------------------------------------
+# 12. Corepack Package Managers (Yarn, pnpm)
+# -----------------------------------------------------------------------------
+# Validates the Corepack configuration flag, its Node.js prerequisites and the
+# list of package managers activated through Corepack.
+
+- name: OS Customize | assert | Validate Corepack configuration flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_corepack is defined
+      - os_customize_configure_corepack is boolean
+    fail_msg: "os_customize_configure_corepack must be a boolean (true/false)"
+    success_msg: "Corepack configuration flag validated: {{ os_customize_configure_corepack }}"
+
+- name: OS Customize | assert | Validate Corepack requires Node.js
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_nodejs | bool
+    fail_msg: "os_customize_configure_corepack requires os_customize_configure_nodejs to be enabled"
+    success_msg: "Corepack prerequisite validated: Node.js configuration is enabled"
+  when: os_customize_configure_corepack | bool
+
+- name: OS Customize | assert | Validate Corepack availability in the selected Node.js release line
+  ansible.builtin.assert:
+    that:
+      - os_customize_nodejs_major_version | int < __os_customize_corepack_unsupported_major_version
+    fail_msg: >-
+      Node.js {{ os_customize_nodejs_major_version }} no longer bundles the corepack binary; select a
+      major version below {{ __os_customize_corepack_unsupported_major_version }} or disable os_customize_configure_corepack
+    success_msg: "Corepack availability validated for Node.js {{ os_customize_nodejs_major_version }}"
+  when: os_customize_configure_corepack | bool
+
+- name: OS Customize | assert | Validate Corepack package managers list
+  ansible.builtin.assert:
+    that:
+      - os_customize_corepack_packages is defined
+      - os_customize_corepack_packages is sequence
+      - os_customize_corepack_packages | length > 0
+      - os_customize_corepack_packages | rejectattr('name', 'defined') | list | length == 0
+      - os_customize_corepack_packages | rejectattr('version', 'defined') | list | length == 0
+    fail_msg: "os_customize_corepack_packages must be a non-empty list of mappings, each with 'name' and 'version' keys"
+    success_msg: "Corepack package managers list validated: {{ os_customize_corepack_packages | length }} entries"
+  when: os_customize_configure_corepack | bool

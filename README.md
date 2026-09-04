@@ -16,6 +16,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🔄 **MOTD & APT Management**: Disable MOTD news service and configure APT periodic update / upgrade settings (`/etc/apt/apt.conf.d/`)
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
 - ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
+- 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
 
 ## 🎯 Architecture
@@ -196,6 +197,37 @@ os_customize_sysctl_settings:
 | `os_customize_sysctl_file` | Path of the managed sysctl drop-in file | `"/etc/sysctl.d/60-ansible-os-customize.conf"` |
 | `os_customize_sysctl_settings` | Mapping of kernel parameter to value, written in the given order | `{}` |
 
+### Node.js, npm and Corepack Options
+
+Node.js is installed from the official NodeSource repositories, which publish a single distribution-agnostic `nodistro` suite covering every supported Debian and Ubuntu release. All three features are disabled by default.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `os_customize_configure_nodejs` | Enable/disable installation of Node.js from the NodeSource repository | `false` |
+| `os_customize_nodejs_major_version` | Major release line mapped to the `node_<major>.x` repository | `"24"` |
+| `os_customize_nodejs_version` | Exact package version to pin, empty for the newest build in the major line | `""` |
+| `os_customize_nodejs_package_state` | Package state applied to the `nodejs` package (`present`, `latest`) | `"present"` |
+| `os_customize_nodejs_apt_repo_base_uri` | Base URI of the NodeSource APT repository | `"https://deb.nodesource.com"` |
+| `os_customize_nodejs_apt_key_url` | URL of the ASCII-armored NodeSource signing key used by APT | `".../gpgkey/nodesource-repo.gpg.key"` |
+| `os_customize_nodejs_yum_repo_base_uri` | Base URI of the NodeSource RPM repository | `"https://rpm.nodesource.com"` |
+| `os_customize_nodejs_yum_key_url` | URL of the NodeSource signing key used by DNF/YUM | `".../gpgkey/ns-operations-public.key"` |
+| `os_customize_nodejs_apt_pin` | Enable/disable the APT pin giving NodeSource priority over the distribution package | `true` |
+| `os_customize_nodejs_apt_pin_priority` | APT pin priority for the NodeSource origin | `600` |
+| `os_customize_configure_npm` | Enable/disable npm management, requires `os_customize_configure_nodejs` | `false` |
+| `os_customize_npm_version` | Global npm version, empty keeps the npm bundled with the `nodejs` package | `""` |
+| `os_customize_npm_global_packages` | Global npm packages, each entry a mapping with `name` and optional `version` | `[]` |
+| `os_customize_configure_corepack` | Enable/disable Corepack shims, requires `os_customize_configure_nodejs` | `false` |
+| `os_customize_corepack_packages` | Package managers activated with `corepack prepare <name>@<version> --activate` | `[{name: yarn, version: stable}]` |
+
+> [!NOTE]
+> `npm` is not a separate package. NodeSource ships it inside the `nodejs` package on both the Debian and the EL family, so it is installed together with the runtime. `os_customize_configure_npm` only manages the global npm version and global npm packages on top of it.
+
+> [!IMPORTANT]
+> Corepack is bundled with Node.js only up to release line 24. Node.js 25 and newer no longer ship the `corepack` binary, and the role refuses to run with `os_customize_configure_corepack` enabled on those release lines.
+
+> [!WARNING]
+> Do not install the same package manager through both `os_customize_npm_global_packages` and `os_customize_corepack_packages`. Both write shims into `/usr/bin`, and the second mechanism collides with the first. Do not add `nodejs` to `os_customize_additional_packages` either; the role rejects that combination because it would install the distribution build before the NodeSource repository exists.
+
 ### Internal OS Variables (Red Hat CoP Prefix)
 
 These internal variables are managed in `vars/main.yml` using double-underscore prefixes and are not intended for direct user override:
@@ -206,6 +238,11 @@ These internal variables are managed in `vars/main.yml` using double-underscore 
 | `__os_customize_welcome_script_path` | Path to the login message script | `/etc/profile.d/login.sh` |
 | `__os_customize_bashrc_marker` | Marker for managed .bashrc block | `"# BEGIN ANSIBLE MANAGED BLOCK"` |
 | `__os_customize_bashrc_list` | Base list of managed .bashrc file paths | `["/root/.bashrc", "/etc/skel/.bashrc"]` |
+| `__os_customize_nodejs_apt_keyring_path` | Path of the NodeSource APT signing key | `/etc/apt/keyrings/nodesource.asc` |
+| `__os_customize_nodejs_apt_suite` | Distribution-agnostic NodeSource APT suite | `nodistro` |
+| `__os_customize_nodejs_apt_preferences_path` | Path of the NodeSource APT pin | `/etc/apt/preferences.d/nodejs` |
+| `__os_customize_nodejs_yum_repo_name` | Name of the NodeSource yum repository | `nodesource-nodejs` |
+| `__os_customize_nodejs_bin_dir` | Directory holding the node binary and Corepack shims | `/usr/bin` |
 
 ## 📌 Role Properties
 
@@ -256,6 +293,22 @@ cat /etc/sysctl.d/60-ansible-os-customize.conf
 sysctl net.ipv4.ip_forward
 ```
 
+### Verify Node.js, npm and Corepack
+
+```bash
+# Runtime and package manager versions
+node --version
+npm --version
+yarn --version
+
+# Repository configuration (Debian/Ubuntu)
+cat /etc/apt/sources.list.d/nodesource.sources
+apt-cache policy nodejs
+
+# Repository configuration (Enterprise Linux)
+cat /etc/yum.repos.d/nodesource-nodejs.repo
+```
+
 ## 🛡️ Security Features
 
 - ✅ **Login Banners**: Security warnings displayed on login screens.
@@ -295,6 +348,16 @@ timedatectl list-timezones
 
 If the welcome message does not appear on login, verify that `/etc/profile.d/` scripts are sourced by your shell configuration.
 
+### Node.js Package Conflicts
+
+The NodeSource `nodejs` package declares `Conflicts: npm` and replaces the distribution build. If a host already carries the distribution's `npm` package, APT refuses the installation. Remove the conflicting package first and re-run the role:
+
+```bash
+sudo apt remove npm
+```
+
+On Enterprise Linux the NodeSource repository sets `module_hotfixes=1`, so the AppStream `nodejs` module does not need to be disabled manually.
+
 ## 📁 File Structure
 
 ```
@@ -325,10 +388,17 @@ ansible-role-os-customize/
 │   ├── assert.yml           # Variable validation
 │   ├── configure.yml        # System configuration and services tasks
 │   ├── bashrc.yml           # .bashrc configuration
-│   └── sysctl.yml           # Kernel parameters configuration
+│   ├── sysctl.yml           # Kernel parameters configuration
+│   ├── nodejs.yml           # Node.js OS family dispatcher
+│   ├── nodejs_debian.yml    # NodeSource APT repository and runtime install
+│   ├── nodejs_redhat.yml    # NodeSource yum repository and runtime install
+│   ├── nodejs_npm.yml       # Global npm version and packages
+│   └── nodejs_corepack.yml  # Corepack shims and package manager activation
 ├── templates/
 │   ├── banner.j2            # Login banner with security warning
 │   ├── sysctl.conf.j2       # Kernel parameters drop-in configuration
+│   ├── apt/
+│   │   └── nodesource-preferences.j2  # APT pin for the NodeSource origin
 │   └── scripts/
 │       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
 │       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
@@ -349,6 +419,7 @@ All tags (except `always`) are prefixed with `os_customize_` to avoid collisions
 | `os_customize_configure` | System configuration tasks (banner, login script, packages, timezone, MOTD timer, SSH group, APT periodic) |
 | `os_customize_bashrc` | Shell environment (`.bashrc`) configuration tasks |
 | `os_customize_sysctl` | Kernel parameter drop-in configuration tasks |
+| `os_customize_nodejs` | Node.js runtime, npm and Corepack configuration tasks |
 
 ## CI/CD Pipeline
 
