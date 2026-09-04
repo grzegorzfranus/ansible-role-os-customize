@@ -1,0 +1,50 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: npm Package Manager
+# =============================================================================
+# Manages the global npm installation shipped inside the Node.js package and
+# installs the requested global npm packages.
+# =============================================================================
+
+- name: OS Customize | nodejs | Install requested global npm version
+  become: true
+  community.general.npm:
+    name: npm
+    global: true
+    version: "{{ os_customize_npm_version if os_customize_npm_version != 'latest' else omit }}"
+    state: "{{ 'latest' if os_customize_npm_version == 'latest' else 'present' }}"
+  register: __os_customize_npm_self_update
+  retries: 3
+  delay: 5
+  until: __os_customize_npm_self_update is succeeded
+  when: >
+    os_customize_npm_version | length > 0
+
+- name: OS Customize | nodejs | Install global npm packages
+  become: true
+  community.general.npm:
+    name: "{{ item.name }}"
+    global: true
+    version: "{{ item.version | default(omit) }}"
+    state: present
+  register: __os_customize_npm_global_install
+  retries: 3
+  delay: 5
+  until: __os_customize_npm_global_install is succeeded
+  loop: "{{ os_customize_npm_global_packages }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# Justification: Report the active npm version; there is no Ansible module that
+# queries the version of an installed npm binary.
+- name: OS Customize | nodejs | Query installed npm version
+  ansible.builtin.command:
+    cmd: "{{ __os_customize_nodejs_bin_dir }}/npm --version"
+  register: __os_customize_npm_reported_version
+  changed_when: false
+  failed_when: false
+
+- name: OS Customize | nodejs | Report installed npm version
+  ansible.builtin.debug:
+    msg: "npm package manager installed: {{ __os_customize_npm_reported_version.stdout | default('not reported') }}"
+    verbosity: 1

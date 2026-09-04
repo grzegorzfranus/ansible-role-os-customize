@@ -1,0 +1,53 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Corepack Package Managers
+# =============================================================================
+# Activates the requested package managers, such as Yarn, through Corepack and
+# enables the Corepack shims bundled with Node.js.
+# =============================================================================
+
+# Justification: Query the package manager version before the shims exist; no
+# Ansible module reports Corepack state. The order matters: once 'corepack
+# enable' has run, the shim resolves to Corepack's own known-good release and
+# would always report success, permanently masking the activation below.
+- name: OS Customize | nodejs | Query active package manager versions
+  ansible.builtin.command:
+    cmd: "{{ __os_customize_nodejs_bin_dir }}/{{ item.name }} --version"
+  register: __os_customize_corepack_reported_versions
+  changed_when: false
+  failed_when: false
+  loop: "{{ os_customize_corepack_packages }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# Justification: Corepack ships no Ansible module; 'creates' guards the shim so
+# the command runs only once per host.
+- name: OS Customize | nodejs | Enable Corepack shims
+  become: true
+  ansible.builtin.command:
+    cmd: "{{ __os_customize_nodejs_bin_dir }}/corepack enable"
+    creates: "{{ __os_customize_nodejs_bin_dir }}/yarn"
+
+# Justification: 'corepack prepare --activate' has no module equivalent; the
+# task is guarded by the version query above so it runs only when the requested
+# package manager is missing or pinned to a different version.
+- name: OS Customize | nodejs | Activate package managers through Corepack
+  become: true
+  ansible.builtin.command:
+    cmd: "{{ __os_customize_nodejs_bin_dir }}/corepack prepare {{ item.item.name }}@{{ item.item.version }} --activate"
+  register: __os_customize_corepack_activation
+  changed_when: true
+  retries: 3
+  delay: 5
+  until: __os_customize_corepack_activation is succeeded
+  loop: "{{ __os_customize_corepack_reported_versions.results }}"
+  loop_control:
+    label: "{{ item.item.name }}@{{ item.item.version }}"
+  when: >
+    item.rc != 0 or
+    (item.item.version not in ['stable', 'latest'] and item.stdout | trim != item.item.version)
+
+- name: OS Customize | nodejs | Report activated package managers
+  ansible.builtin.debug:
+    msg: "Corepack package managers requested: {{ os_customize_corepack_packages | map(attribute='name') | join(', ') }}"
+    verbosity: 1

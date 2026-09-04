@@ -8,6 +8,7 @@
 # Sections:
 #   1. Bashrc Configuration
 #   2. Banner and Login Script Paths
+#   3. Node.js Runtime (NodeSource)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -29,3 +30,40 @@ __os_customize_welcome_banner_path: "/etc/profile.d/banner"
 
 # Path to the login message script (currently identical across all supported distributions)
 __os_customize_welcome_script_path: "/etc/profile.d/login.sh"
+
+# -----------------------------------------------------------------------------
+# 3. Node.js Runtime (NodeSource)
+# -----------------------------------------------------------------------------
+# Name of the deb822 APT source; the module writes /etc/apt/sources.list.d/<name>.sources,
+# matching the file the official NodeSource setup script creates
+__os_customize_nodejs_apt_repo_name: "nodesource"
+
+# Path of the ASCII-armored NodeSource signing key referenced by the deb822 source
+__os_customize_nodejs_apt_keyring_path: "/etc/apt/keyrings/nodesource.asc"
+
+# Distribution-agnostic suite and component published by NodeSource for every Debian and Ubuntu release
+__os_customize_nodejs_apt_suite: "nodistro"
+__os_customize_nodejs_apt_component: "main"
+
+# Path of the APT preferences file pinning nodejs to the NodeSource origin
+__os_customize_nodejs_apt_preferences_path: "/etc/apt/preferences.d/nodejs"
+
+# Path written by NodeSource setup scripts older than 2023; removed to avoid a duplicate repository
+__os_customize_nodejs_apt_legacy_list_path: "/etc/apt/sources.list.d/nodesource.list"
+
+# APT architecture name derived from the gathered kernel architecture
+__os_customize_nodejs_apt_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+
+# Name of the yum/dnf repository definition created on the Enterprise Linux family
+__os_customize_nodejs_yum_repo_name: "nodesource-nodejs"
+
+# Architectures NodeSource publishes Node.js builds for
+__os_customize_nodejs_supported_architectures:
+  - "x86_64"
+  - "aarch64"
+
+# Directory holding the node binary and the shims created by 'corepack enable'
+__os_customize_nodejs_bin_dir: "/usr/bin"
+
+# First Node.js major release that no longer bundles the corepack binary
+__os_customize_corepack_unsupported_major_version: 25

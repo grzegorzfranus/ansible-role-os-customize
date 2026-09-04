@@ -1,0 +1,112 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Node.js Runtime (Debian)
+# =============================================================================
+# Deploys the NodeSource signing key, configures the deb822 APT repository and
+# its pin, refreshes the package cache and installs the Node.js runtime.
+# =============================================================================
+
+# Justification: ansible.builtin.deb822_repository requires the python-debian
+# library on the target and does not install it on its own.
+- name: OS Customize | nodejs | Install deb822 repository prerequisites (Debian)
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  register: __os_customize_nodejs_prerequisites
+  retries: 3
+  delay: 5
+  until: __os_customize_nodejs_prerequisites is succeeded
+
+- name: OS Customize | nodejs | Create apt keyrings directory (Debian)
+  become: true
+  ansible.builtin.file:
+    path: "{{ __os_customize_nodejs_apt_keyring_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: OS Customize | nodejs | Download NodeSource signing key (Debian)
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ os_customize_nodejs_apt_key_url }}"
+    dest: "{{ __os_customize_nodejs_apt_keyring_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: __os_customize_nodejs_key_download
+  retries: 3
+  delay: 5
+  until: __os_customize_nodejs_key_download is succeeded
+
+# Justification: NodeSource setup scripts older than 2023 wrote a one-line
+# nodesource.list; removing it prevents a duplicate repository definition.
+- name: OS Customize | nodejs | Remove legacy NodeSource apt sources list (Debian)
+  become: true
+  ansible.builtin.file:
+    path: "{{ __os_customize_nodejs_apt_legacy_list_path }}"
+    state: absent
+
+- name: OS Customize | nodejs | Configure NodeSource apt repository (Debian)
+  become: true
+  ansible.builtin.deb822_repository:
+    name: "{{ __os_customize_nodejs_apt_repo_name }}"
+    types:
+      - deb
+    uris:
+      - "{{ os_customize_nodejs_apt_repo_base_uri }}/node_{{ os_customize_nodejs_major_version }}.x"
+    suites:
+      - "{{ __os_customize_nodejs_apt_suite }}"
+    components:
+      - "{{ __os_customize_nodejs_apt_component }}"
+    architectures:
+      - "{{ __os_customize_nodejs_apt_arch }}"
+    signed_by: "{{ __os_customize_nodejs_apt_keyring_path }}"
+    state: present
+    enabled: true
+  register: __os_customize_nodejs_repository
+
+- name: OS Customize | nodejs | Deploy NodeSource apt pin (Debian)
+  become: true
+  ansible.builtin.template:
+    src: "apt/nodesource-preferences.j2"
+    dest: "{{ __os_customize_nodejs_apt_preferences_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: >
+    os_customize_nodejs_apt_pin | bool
+
+- name: OS Customize | nodejs | Remove NodeSource apt pin when disabled (Debian)
+  become: true
+  ansible.builtin.file:
+    path: "{{ __os_customize_nodejs_apt_preferences_path }}"
+    state: absent
+  when: >
+    not os_customize_nodejs_apt_pin | bool
+
+- name: OS Customize | nodejs | Update apt cache after repository change (Debian)
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 0
+  register: __os_customize_nodejs_cache_update
+  retries: 3
+  delay: 5
+  until: __os_customize_nodejs_cache_update is succeeded
+  when:
+    - not ansible_check_mode
+
+- name: OS Customize | nodejs | Install Node.js runtime (Debian)
+  become: true
+  ansible.builtin.apt:
+    name: "nodejs{{ ('=' ~ os_customize_nodejs_version) if os_customize_nodejs_version | length > 0 else '' }}"
+    state: "{{ os_customize_nodejs_package_state }}"
+  register: __os_customize_nodejs_install
+  retries: 3
+  delay: 5
+  until: __os_customize_nodejs_install is succeeded

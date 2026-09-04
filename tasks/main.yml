@@ -2,7 +2,7 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Main Entrypoint
 # =============================================================================
-# Flow: include_vars → assert → configure → bashrc → sysctl
+# Flow: include_vars → assert → configure → bashrc → sysctl → nodejs
 # =============================================================================
 
 - name: OS Customize | main | Gather OS specific variables
@@ -75,3 +75,12 @@
     - os_customize_setup
     - os_customize_configure
     - os_customize_sysctl
+
+- name: OS Customize | main | Run Node.js runtime configuration tasks
+  ansible.builtin.import_tasks: nodejs.yml
+  when: >
+    os_customize_configure_nodejs | bool
+  tags:
+    - os_customize_setup
+    - os_customize_configure
+    - os_customize_nodejs

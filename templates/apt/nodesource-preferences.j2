@@ -1,0 +1,5 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+Package: nodejs
+Pin: origin {{ os_customize_nodejs_apt_repo_base_uri | regex_replace('^https?://', '') | regex_replace('/.*$', '') }}
+Pin-Priority: {{ os_customize_nodejs_apt_pin_priority }}

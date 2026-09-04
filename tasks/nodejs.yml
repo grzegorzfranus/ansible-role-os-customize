@@ -1,0 +1,69 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Node.js Runtime
+# =============================================================================
+# Routes Node.js repository and package configuration to the OS family specific
+# implementation, then optionally configures npm and Corepack package managers.
+# =============================================================================
+
+- name: OS Customize | nodejs | Configure Node.js from NodeSource (Debian)
+  ansible.builtin.include_tasks:
+    file: nodejs_debian.yml
+  args:
+    apply:
+      tags:
+        - os_customize_setup
+        - os_customize_configure
+        - os_customize_nodejs
+  when: >
+    ansible_facts['os_family'] == 'Debian'
+
+- name: OS Customize | nodejs | Configure Node.js from NodeSource (RedHat)
+  ansible.builtin.include_tasks:
+    file: nodejs_redhat.yml
+  args:
+    apply:
+      tags:
+        - os_customize_setup
+        - os_customize_configure
+        - os_customize_nodejs
+  when: >
+    ansible_facts['os_family'] == 'RedHat'
+
+- name: OS Customize | nodejs | Configure npm package manager
+  ansible.builtin.include_tasks:
+    file: nodejs_npm.yml
+  args:
+    apply:
+      tags:
+        - os_customize_setup
+        - os_customize_configure
+        - os_customize_nodejs
+  when: >
+    os_customize_configure_npm | bool
+
+- name: OS Customize | nodejs | Configure Corepack package managers
+  ansible.builtin.include_tasks:
+    file: nodejs_corepack.yml
+  args:
+    apply:
+      tags:
+        - os_customize_setup
+        - os_customize_configure
+        - os_customize_nodejs
+  when: >
+    os_customize_configure_corepack | bool
+
+# Justification: Report the installed runtime version; there is no Ansible module
+# that queries the Node.js version of an installed interpreter.
+- name: OS Customize | nodejs | Query installed Node.js version
+  ansible.builtin.command:
+    cmd: "{{ __os_customize_nodejs_bin_dir }}/node --version"
+  register: __os_customize_nodejs_reported_version
+  changed_when: false
+  failed_when: false
+
+- name: OS Customize | nodejs | Report installed Node.js version
+  ansible.builtin.debug:
+    msg: "Node.js runtime installed: {{ __os_customize_nodejs_reported_version.stdout | default('not reported') }}"
+    verbosity: 1

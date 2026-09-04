@@ -7,11 +7,13 @@
 # - Updates package repositories
 # - Ensures system readiness
 # - Executes the OS Customize role
+# - Installs the Node.js runtime, npm packages and Corepack shims
 #
 # Flow:
 # 1. Update package cache
 # 2. Wait for system initialization
 # 3. Apply OS Customize role
+# 4. Configure Node.js, npm and Corepack
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -75,3 +77,14 @@
         os_customize_sysctl_settings:
           net.ipv4.ip_forward: "0"
           net.ipv4.conf.all.accept_redirects: "0"
+        os_customize_configure_nodejs: true
+        os_customize_nodejs_major_version: "24"
+        os_customize_nodejs_package_state: "present"
+        os_customize_nodejs_apt_pin: true
+        os_customize_configure_npm: true
+        os_customize_npm_global_packages:
+          - name: "semver"
+        os_customize_configure_corepack: true
+        os_customize_corepack_packages:
+          - name: "yarn"
+            version: "stable"

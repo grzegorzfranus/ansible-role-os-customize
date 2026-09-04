@@ -1,0 +1,34 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Node.js Runtime (RedHat)
+# =============================================================================
+# Configures the NodeSource yum repository and installs the Node.js runtime.
+# The repository enables module_hotfixes so the NodeSource build takes
+# precedence over the distribution's nodejs application stream module.
+# =============================================================================
+
+- name: OS Customize | nodejs | Configure NodeSource yum repository (RedHat)
+  become: true
+  ansible.builtin.yum_repository:
+    name: "{{ __os_customize_nodejs_yum_repo_name }}"
+    description: "Node.js Packages for Linux RPM based distros - $basearch"
+    baseurl: "{{ os_customize_nodejs_yum_repo_base_uri }}/pub_{{ os_customize_nodejs_major_version }}.x/nodistro/nodejs/$basearch"
+    gpgcheck: true
+    gpgkey: "{{ os_customize_nodejs_yum_key_url }}"
+    module_hotfixes: true
+    priority: "9"
+    enabled: true
+    state: present
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: OS Customize | nodejs | Install Node.js runtime (RedHat)
+  become: true
+  ansible.builtin.dnf:
+    name: "nodejs{{ ('-' ~ os_customize_nodejs_version) if os_customize_nodejs_version | length > 0 else '' }}"
+    state: "{{ os_customize_nodejs_package_state }}"
+  register: __os_customize_nodejs_install
+  retries: 3
+  delay: 5
+  until: __os_customize_nodejs_install is succeeded
