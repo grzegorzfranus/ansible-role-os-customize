@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.1.0...v2.2.0) (2026-10-19)
+
+
+### Features
+
+* manage third-party APT repositories as deb822 sources ([#38](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/38)) ([#40](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/40)) ([f5098b8](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/f5098b8af01c5e9922a0e0e5c94df48ff1318d6c))
+
 ## [2.1.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.0.1...v2.1.0) (2026-09-04)
 
 
