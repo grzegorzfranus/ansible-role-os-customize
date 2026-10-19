@@ -12,6 +12,7 @@
 # - MOTD news service status
 # - APT periodic update and unattended upgrade settings
 # - Kernel parameter (sysctl) drop-in file and applied values
+# - Third-party APT repositories
 # - Node.js runtime, npm and Corepack package managers
 #
 # Flow:
@@ -24,7 +25,9 @@
 # 7. Verify MOTD news service
 # 8. Verify APT periodic settings
 # 9. Verify kernel parameters (sysctl)
-# 10. Verify Node.js, npm and Corepack
+# 10. Verify third-party APT repositories
+# 11. Verify Node.js, npm and Corepack
+# 12. Final summary
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -300,28 +303,82 @@
         success_msg: "Kernel parameter net.ipv4.ip_forward is verified as 0"
 
 # -----------------------------------------------------------------------------
-# 10. Final Summary
+# 10. Third-Party APT Repositories Verification (Debian family)
 # -----------------------------------------------------------------------------
-    - name: Verify | Show verification results
-      ansible.builtin.debug:
-        msg: "All OS Customize verification checks completed successfully!"
+    - name: Verify | Check if github-cli deb822 sources file exists (Debian)
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/github-cli.sources
+      register: _gh_sources_file_
+      when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Verify | Final verification summary
-      ansible.builtin.debug:
-        msg:
-          - "Banner: Deployed at {{ __os_customize_welcome_banner_path }}"
-          - "Login script: Deployed at {{ __os_customize_welcome_script_path }}"
-          - "Packages: bc, vim installed"
-          - "Timezone: UTC configured"
-          - "Bashrc: Configured for root and skel"
-          - "SSH group: sshusers (GID 10000) created"
-          - "MOTD news: Disabled"
-          - "APT periodic: Disabled"
-          - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
-          - "OS Customize role verification: PASSED"
+    - name: Verify | Assert github-cli deb822 sources file exists (Debian)
+      ansible.builtin.assert:
+        that:
+          - _gh_sources_file_.stat.exists
+        fail_msg: "GitHub CLI deb822 sources file does not exist at /etc/apt/sources.list.d/github-cli.sources"
+        success_msg: "GitHub CLI deb822 sources file verified at /etc/apt/sources.list.d/github-cli.sources"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Read github-cli deb822 sources file (Debian)
+      ansible.builtin.slurp:
+        src: /etc/apt/sources.list.d/github-cli.sources
+      register: _gh_sources_content_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert github-cli deb822 source contains signed-by (Debian)
+      ansible.builtin.assert:
+        that:
+          - "'Signed-By: /etc/apt/keyrings/githubcli-archive-keyring.gpg' in (_gh_sources_content_.content | b64decode)"
+        fail_msg: "GitHub CLI deb822 source does not contain 'Signed-By: /etc/apt/keyrings/githubcli-archive-keyring.gpg'"
+        success_msg: "GitHub CLI deb822 source contains expected Signed-By path"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Check if legacy github-cli.list file exists (Debian)
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/github-cli.list
+      register: _gh_legacy_list_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert legacy github-cli.list file does not exist (Debian)
+      ansible.builtin.assert:
+        that:
+          - not _gh_legacy_list_.stat.exists
+        fail_msg: "Legacy file /etc/apt/sources.list.d/github-cli.list still exists"
+        success_msg: "Legacy file /etc/apt/sources.list.d/github-cli.list does not exist"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Check github-cli keyring file (Debian)
+      ansible.builtin.stat:
+        path: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      register: _gh_keyring_
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert github-cli keyring exists with mode 0644 (Debian)
+      ansible.builtin.assert:
+        that:
+          - _gh_keyring_.stat.exists
+          - _gh_keyring_.stat.mode == "0644"
+        fail_msg: "GitHub CLI keyring does not exist or has incorrect mode"
+        success_msg: "GitHub CLI keyring verified with mode 0644 at /etc/apt/keyrings/githubcli-archive-keyring.gpg"
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Execute gh --version (Debian)
+      ansible.builtin.command:
+        cmd: gh --version
+      register: _gh_version_
+      changed_when: false
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Verify | Assert gh --version succeeds (Debian)
+      ansible.builtin.assert:
+        that:
+          - _gh_version_.rc == 0
+        fail_msg: "gh --version command failed"
+        success_msg: "gh --version succeeded: {{ _gh_version_.stdout_lines[0] }}"
+      when: ansible_facts['os_family'] == 'Debian'
 
 # -----------------------------------------------------------------------------
-# 10. Node.js, npm and Corepack Verification
+# 11. Node.js, npm and Corepack Verification
 # -----------------------------------------------------------------------------
     - name: Verify | Check NodeSource apt keyring (Debian)
       ansible.builtin.stat:
@@ -435,3 +492,26 @@
           Yarn reports {{ _yarn_version_.stdout }}; 'corepack prepare yarn@stable --activate' did not run,
           leaving Corepack's bundled 1.x known-good release in place
         success_msg: "Yarn verified through Corepack: {{ _yarn_version_.stdout }}"
+
+# -----------------------------------------------------------------------------
+# 12. Final Summary
+# -----------------------------------------------------------------------------
+    - name: Verify | Show verification results
+      ansible.builtin.debug:
+        msg: "All OS Customize verification checks completed successfully!"
+
+    - name: Verify | Final verification summary
+      ansible.builtin.debug:
+        msg:
+          - "Banner: Deployed at {{ __os_customize_welcome_banner_path }}"
+          - "Login script: Deployed at {{ __os_customize_welcome_script_path }}"
+          - "Packages: bc, vim installed"
+          - "Timezone: UTC configured"
+          - "Bashrc: Configured for root and skel"
+          - "SSH group: sshusers (GID 10000) created"
+          - "MOTD news: Disabled"
+          - "APT periodic: Disabled"
+          - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
+          - "APT repositories: github-cli deb822 source and keyring verified (Debian)"
+          - "Node.js: Runtime, npm and Corepack verified"
+          - "OS Customize role verification: PASSED"

@@ -8,12 +8,13 @@
 # - Ensures system readiness
 # - Executes the OS Customize role
 # - Installs the Node.js runtime, npm packages and Corepack shims
+# - Configures third-party APT repositories
 #
 # Flow:
 # 1. Update package cache
 # 2. Wait for system initialization
 # 3. Apply OS Customize role
-# 4. Configure Node.js, npm and Corepack
+# 4. Configure APT repositories, Node.js, npm and Corepack
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -63,9 +64,21 @@
         os_customize_configure_timezone: true
         os_customize_timezone: "UTC"
         os_customize_configure_additional_packages: true
-        os_customize_additional_packages:
-          - bc
-          - vim
+        os_customize_additional_packages: "{{ ['bc', 'vim', 'gh'] if ansible_facts['os_family'] == 'Debian' else ['bc', 'vim'] }}"
+        os_customize_apt_repositories: >-
+          {{
+            [
+              {
+                'name': 'github-cli',
+                'uris': ['https://cli.github.com/packages'],
+                'suites': ['stable'],
+                'components': ['main'],
+                'signed_by': '/etc/apt/keyrings/githubcli-archive-keyring.gpg',
+                'key_url': 'https://cli.github.com/packages/githubcli-archive-keyring.gpg',
+                'legacy_files': ['/etc/apt/sources.list.d/github-cli.list']
+              }
+            ] if ansible_facts['os_family'] == 'Debian' else []
+          }}
         os_customize_configure_welcome_message: true
         os_customize_configure_bashrc: true
         os_customize_disable_motd_news: true
