@@ -17,6 +17,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
 - ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
 - 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
+- 📦 **Third-Party APT Repositories**: Configure generic third-party APT repositories as deb822 sources (`.sources`), download signing keys, and clean up legacy `.list` files on Debian-family systems
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
 
 ## 🎯 Architecture
@@ -228,6 +229,49 @@ Node.js is installed from the official NodeSource repositories, which publish a 
 > [!WARNING]
 > Do not install the same package manager through both `os_customize_npm_global_packages` and `os_customize_corepack_packages`. Both write shims into `/usr/bin`, and the second mechanism collides with the first. Do not add `nodejs` to `os_customize_additional_packages` either; the role rejects that combination because it would install the distribution build before the NodeSource repository exists.
 
+### Third-Party APT Repositories
+
+Configures generic third-party APT repositories written as deb822 sources (`/etc/apt/sources.list.d/<name>.sources`) on Debian and Ubuntu systems.
+
+| Key | Required | Type | Meaning |
+|---|---|---|---|
+| `name` | yes | str | Repository slug. The source is written to `/etc/apt/sources.list.d/<name>.sources` and `X-Repolib-Name` is set to it. Must match `^[a-z0-9][a-z0-9._-]*$` |
+| `uris` | yes | list of str | Repository URIs, each http(s) |
+| `suites` | yes | list of str | Suites, e.g. `["stable"]` or `["{{ ansible_facts['distribution_release'] }}"]` |
+| `components` | no | list of str | Components, e.g. `["main"]`; omitted from the file when not given |
+| `architectures` | no | list of str | Architectures, e.g. `["amd64"]`; omitted from the file when not given |
+| `types` | no | list of str | `"deb"` and/or `"deb-src"`; default `["deb"]` |
+| `signed_by` | yes when state is present | str | Absolute path of the keyring file referenced in `Signed-By`. Must start with `/` and end with `.asc` (ASCII-armored key) or `.gpg` (binary key); apt picks the format from the extension |
+| `key_url` | no | str | http(s) URL of the signing key. When given, the key is downloaded to `signed_by` only if that file does not exist yet (`get_url` with `force: false`), so an existing keyring is never rewritten |
+| `legacy_files` | no | list of str | Absolute paths removed after the deb822 source is written, e.g. a one-line `/etc/apt/sources.list.d/<x>.list` written by a vendor install script, or an old keyring the new source no longer references. A one-line source for the same URI with a different Signed-By makes apt fail, which is why it must go |
+| `state` | no | str | `"present"` (default) or `"absent"`. `absent` removes the `.sources` file and the `legacy_files` |
+
+#### Example
+
+```yaml
+os_customize_apt_repositories:
+  - name: "github-cli"
+    uris: ["https://cli.github.com/packages"]
+    suites: ["stable"]
+    components: ["main"]
+    signed_by: "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
+    key_url: "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+    legacy_files: ["/etc/apt/sources.list.d/github-cli.list"]
+  - name: "azure-cli"
+    uris: ["https://packages.microsoft.com/repos/azure-cli/"]
+    suites: ["{{ ansible_facts['distribution_release'] }}"]
+    components: ["main"]
+    architectures: ["amd64"]
+    signed_by: "/etc/apt/keyrings/microsoft.asc"
+    key_url: "https://packages.microsoft.com/keys/microsoft.asc"
+```
+
+- The keyring extension must match the key format (`.asc` armored, `.gpg` binary); Microsoft publishes an armored key, GitHub a binary one.
+- An existing keyring at `signed_by` is kept as is; `key_url` only fills a missing one.
+- Packages from the repository go into `os_customize_additional_packages`; the role writes the sources before installing them. `state: present` never upgrades a package that is already installed.
+- `state: absent` relies on `ansible.builtin.deb822_repository`, which also deletes `/etc/apt/keyrings/<name>.asc` and `/etc/apt/keyrings/<name>.gpg` if they exist; a keyring the source should keep must use another file name.
+- `ansible.builtin.deb822_repository` does not support `--diff`; in check mode the task reports changed without a diff body.
+
 ### Internal OS Variables (Red Hat CoP Prefix)
 
 These internal variables are managed in `vars/main.yml` using double-underscore prefixes and are not intended for direct user override:
@@ -309,6 +353,16 @@ apt-cache policy nodejs
 cat /etc/yum.repos.d/nodesource-nodejs.repo
 ```
 
+### Verify Third-Party APT Repositories
+
+```bash
+# List configured deb822 sources
+cat /etc/apt/sources.list.d/*.sources
+
+# Inspect package policy and repository origin
+apt-cache policy gh
+```
+
 ## 🛡️ Security Features
 
 - ✅ **Login Banners**: Security warnings displayed on login screens.
@@ -387,6 +441,7 @@ ansible-role-os-customize/
 │   ├── main.yml             # Main task orchestration
 │   ├── assert.yml           # Variable validation
 │   ├── configure.yml        # System configuration and services tasks
+│   ├── apt_repositories.yml # Third-party APT repositories configuration
 │   ├── bashrc.yml           # .bashrc configuration
 │   ├── sysctl.yml           # Kernel parameters configuration
 │   ├── nodejs.yml           # Node.js OS family dispatcher
@@ -417,6 +472,7 @@ All tags (except `always`) are prefixed with `os_customize_` to avoid collisions
 | `os_customize_setup` | High-level setup meta tag including all configuration task files |
 | `os_customize_validate` | Variable validation and configuration assertions |
 | `os_customize_configure` | System configuration tasks (banner, login script, packages, timezone, MOTD timer, SSH group, APT periodic) |
+| `os_customize_apt_repositories` | Third-party APT repository configuration tasks |
 | `os_customize_bashrc` | Shell environment (`.bashrc`) configuration tasks |
 | `os_customize_sysctl` | Kernel parameter drop-in configuration tasks |
 | `os_customize_nodejs` | Node.js runtime, npm and Corepack configuration tasks |

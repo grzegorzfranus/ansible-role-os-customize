@@ -11,7 +11,7 @@
 # Flow:
 # 1. Fix system file permissions
 # 2. Install timezone data
-# 3. Validate system state
+# 3. Simulate legacy APT repository setup (Debian)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -70,3 +70,44 @@
         state: present
       when: >
         ansible_facts['os_family'] == "RedHat"
+
+# -----------------------------------------------------------------------------
+# 3. Legacy APT Repository Simulation (Debian family)
+# -----------------------------------------------------------------------------
+    - name: Prepare | Ensure keyrings directory exists (Debian)
+      ansible.builtin.file:
+        path: /usr/share/keyrings
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Download legacy GitHub CLI keyring (Debian)
+      ansible.builtin.get_url:
+        url: "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+        dest: "/usr/share/keyrings/githubcli-archive-keyring.gpg"
+        owner: root
+        group: root
+        mode: "0644"
+      retries: 3
+      delay: 5
+      register: __prepare_gh_keyring
+      until: __prepare_gh_keyring is succeeded
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Deploy legacy GitHub CLI sources list (Debian)
+      ansible.builtin.copy:
+        dest: "/etc/apt/sources.list.d/github-cli.list"
+        content: >
+          deb [arch={{ _gh_arch }} signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg]
+          https://cli.github.com/packages stable main
+        owner: root
+        group: root
+        mode: "0644"
+      vars:
+        _gh_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else ('arm64' if ansible_facts['architecture'] == 'aarch64' else ansible_facts['architecture']) }}"
+      when: >
+        ansible_facts['os_family'] == "Debian"

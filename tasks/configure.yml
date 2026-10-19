@@ -2,8 +2,9 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Configure
 # =============================================================================
-# Deploys the login banner and welcome script, installs additional packages, sets the timezone,
-# disables the MOTD news timer, creates the SSH users group and enforces APT periodic settings.
+# Deploys the login banner and welcome script, configures third-party APT repositories,
+# installs additional packages, sets the timezone, disables the MOTD news timer,
+# creates the SSH users group and enforces APT periodic settings.
 # =============================================================================
 
 - name: OS Customize | configure | Deploy welcome message and login banner
@@ -28,6 +29,14 @@
         group: root
         mode: "0644"
         backup: true
+
+- name: OS Customize | configure | Configure third-party APT repositories
+  ansible.builtin.import_tasks: apt_repositories.yml
+  when:
+    - ansible_facts['os_family'] | lower == 'debian'
+    - os_customize_apt_repositories | length > 0
+  tags:
+    - os_customize_apt_repositories
 
 - name: OS Customize | configure | Install additional packages
   become: true

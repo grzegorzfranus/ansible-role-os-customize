@@ -201,3 +201,58 @@ argument_specs:
             type: str
             required: true
             description: "Version or dist-tag passed to corepack, for example 'stable'."
+
+      os_customize_apt_repositories:
+        type: list
+        elements: dict
+        default: []
+        description: "List of third-party APT repositories to configure as deb822 sources on Debian-family hosts."
+        options:
+          name:
+            type: str
+            required: true
+            description: "Repository slug. Written to /etc/apt/sources.list.d/<name>.sources and set as X-Repolib-Name."
+          uris:
+            type: list
+            elements: str
+            required: true
+            description: "Repository URIs, each http or https."
+          suites:
+            type: list
+            elements: str
+            required: true
+            description: "Repository suites, e.g. ['stable'] or distribution release codename."
+          components:
+            type: list
+            elements: str
+            description: "Optional repository components, e.g. ['main']; omitted from the file when not given."
+          architectures:
+            type: list
+            elements: str
+            description: "Optional repository architectures, e.g. ['amd64']; omitted from the file when not given."
+          types:
+            type: list
+            elements: str
+            default:
+              - deb
+            choices:
+              - deb
+              - deb-src
+            description: "Package types to look for from the repository ('deb' and/or 'deb-src')."
+          signed_by:
+            type: str
+            description: "Absolute path of the keyring file referenced in Signed-By (.asc or .gpg). Required when state is present."
+          key_url:
+            type: str
+            description: "Optional http or https URL of the signing key to download if not already present."
+          legacy_files:
+            type: list
+            elements: str
+            description: "Optional list of absolute paths removed after the deb822 source is written."
+          state:
+            type: str
+            default: "present"
+            choices:
+              - present
+              - absent
+            description: "Desired repository state ('present' or 'absent')."

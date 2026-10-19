@@ -1,0 +1,100 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Third-Party APT Repositories (Debian)
+# =============================================================================
+# Deploys signing keys, configures deb822 APT repositories, removes legacy
+# source files and refreshes the package cache on Debian family systems.
+# =============================================================================
+
+# Justification: ansible.builtin.deb822_repository requires the python-debian
+# library on the target and does not install it on its own.
+- name: OS Customize | apt_repositories | Install deb822 repository prerequisites (Debian)
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  register: __os_customize_apt_repositories_prerequisites
+  retries: 3
+  delay: 5
+  until: __os_customize_apt_repositories_prerequisites is succeeded
+
+- name: OS Customize | apt_repositories | Create signing key parent directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.signed_by | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ os_customize_apt_repositories }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - (item.state | default('present')) == 'present'
+    - item.signed_by is defined
+
+- name: OS Customize | apt_repositories | Download repository signing keys
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ item.key_url }}"
+    dest: "{{ item.signed_by }}"
+    force: false
+    owner: root
+    group: root
+    mode: "0644"
+  register: __os_customize_apt_repositories_key_download
+  retries: 3
+  delay: 5
+  until: __os_customize_apt_repositories_key_download is succeeded
+  loop: "{{ os_customize_apt_repositories }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - (item.state | default('present')) == 'present'
+    - item.key_url is defined
+    - item.key_url | length > 0
+
+- name: OS Customize | apt_repositories | Configure third-party APT repositories
+  become: true
+  ansible.builtin.deb822_repository:
+    name: "{{ item.name }}"
+    types: "{{ item.types | default(['deb']) }}"
+    uris: "{{ item.uris }}"
+    suites: "{{ item.suites }}"
+    components: "{{ item.components | default(omit) }}"
+    architectures: "{{ item.architectures | default(omit) }}"
+    signed_by: "{{ item.signed_by if (item.state | default('present')) == 'present' else omit }}"
+    state: "{{ item.state | default('present') }}"
+    enabled: "{{ true if (item.state | default('present')) == 'present' else omit }}"
+  register: __os_customize_apt_repositories_sources
+  loop: "{{ os_customize_apt_repositories }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# Justification: A one-line source for the same URI with a different Signed-By
+# makes apt fail; removing legacy files prevents repository definition conflicts.
+- name: OS Customize | apt_repositories | Remove legacy repository files
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.1 }}"
+    state: absent
+  register: __os_customize_apt_repositories_legacy
+  loop: "{{ query('ansible.builtin.subelements', os_customize_apt_repositories, 'legacy_files', {'skip_missing': true}) }}"
+  loop_control:
+    label: "{{ item.1 }}"
+
+- name: OS Customize | apt_repositories | Update apt cache after repository change
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 0
+  register: __os_customize_apt_repositories_cache_update
+  retries: 3
+  delay: 5
+  until: __os_customize_apt_repositories_cache_update is succeeded
+  when:
+    - not ansible_check_mode
+    - (__os_customize_apt_repositories_sources.changed | default(false)) or
+      (__os_customize_apt_repositories_legacy.changed | default(false))

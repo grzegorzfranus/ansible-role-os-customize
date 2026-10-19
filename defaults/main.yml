@@ -27,6 +27,7 @@
 #   10. Node.js Runtime (NodeSource)
 #   11. npm Package Manager
 #   12. Corepack Package Managers (Yarn, pnpm)
+#   13. Third-Party APT Repositories (Debian family)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -205,3 +206,20 @@ os_customize_configure_corepack: false
 os_customize_corepack_packages:
   - name: "yarn"
     version: "stable"
+
+# -----------------------------------------------------------------------------
+# 13. Third-Party APT Repositories (Debian family)
+# -----------------------------------------------------------------------------
+# List of third-party APT repositories to configure as deb822 sources on Debian-family hosts.
+# Each entry is a mapping configuring a repository under /etc/apt/sources.list.d/<name>.sources
+# and optionally downloading its signing key or cleaning up legacy source files.
+# Example:
+#   - name: "github-cli"
+#     uris: ["https://cli.github.com/packages"]
+#     suites: ["stable"]
+#     components: ["main"]
+#     signed_by: "/etc/apt/keyrings/githubcli-archive-keyring.gpg"
+#     key_url: "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+#     legacy_files: ["/etc/apt/sources.list.d/github-cli.list"]
+# Valid values: list of mappings
+os_customize_apt_repositories: []
