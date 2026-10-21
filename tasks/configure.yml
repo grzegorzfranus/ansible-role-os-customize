@@ -4,7 +4,8 @@
 # =============================================================================
 # Deploys the login banner and welcome script, configures third-party APT repositories,
 # installs additional packages, sets the timezone, disables the MOTD news timer,
-# creates the SSH users group and enforces APT periodic settings.
+# skips fwupd-refresh service on virtual machines, creates the SSH users group and
+# enforces APT periodic settings.
 # =============================================================================
 
 - name: OS Customize | configure | Deploy welcome message and login banner
@@ -100,6 +101,52 @@
         masked: true
       when: >
         __os_customize_motd_news_timer.stat.exists | bool
+
+- name: OS Customize | configure | Skip fwupd-refresh service on virtual machines
+  become: true
+  block:
+    - name: OS Customize | configure | Check if fwupd-refresh.service exists
+      ansible.builtin.stat:
+        path: "/lib/systemd/system/fwupd-refresh.service"
+      register: __os_customize_fwupd_refresh_unit
+
+    - name: OS Customize | configure | Ensure fwupd-refresh systemd drop-in directory exists
+      ansible.builtin.file:
+        path: "{{ __os_customize_fwupd_refresh_dropin_path | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: >
+        os_customize_skip_fwupd_refresh_on_virtual | bool and
+        __os_customize_fwupd_refresh_unit.stat.exists | bool
+
+    - name: OS Customize | configure | Deploy fwupd-refresh systemd virtualization drop-in
+      ansible.builtin.copy:
+        dest: "{{ __os_customize_fwupd_refresh_dropin_path }}"
+        content: |
+          # {{ ansible_managed }}
+          [Unit]
+          ConditionVirtualization=no
+        owner: root
+        group: root
+        mode: "0644"
+      when: >
+        os_customize_skip_fwupd_refresh_on_virtual | bool and
+        __os_customize_fwupd_refresh_unit.stat.exists | bool
+      notify:
+        - OS Customize | handlers | Reload systemd manager configuration
+        - OS Customize | handlers | Reset failed state of fwupd-refresh service
+
+    - name: OS Customize | configure | Remove fwupd-refresh systemd virtualization drop-in
+      ansible.builtin.file:
+        path: "{{ __os_customize_fwupd_refresh_dropin_path }}"
+        state: absent
+      when: >
+        not os_customize_skip_fwupd_refresh_on_virtual | bool
+      notify:
+        - OS Customize | handlers | Reload systemd manager configuration
+        - OS Customize | handlers | Reset failed state of fwupd-refresh service
 
 - name: OS Customize | configure | Create dedicated SSH users group
   become: true

@@ -58,6 +58,11 @@ argument_specs:
         default: true
         description: "Enable or disable stopping and masking of the motd-news.timer systemd service."
 
+      os_customize_skip_fwupd_refresh_on_virtual:
+        type: bool
+        default: true
+        description: "Deploy a systemd drop-in with ConditionVirtualization=no for fwupd-refresh.service on virtual machines and containers."
+
       os_customize_configure_ssh_group:
         type: bool
         default: true

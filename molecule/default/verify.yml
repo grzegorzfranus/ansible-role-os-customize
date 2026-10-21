@@ -9,7 +9,7 @@
 # - Timezone configuration
 # - Bashrc configuration
 # - SSH user group creation
-# - MOTD news service status
+# - MOTD news service and fwupd-refresh virtualization drop-in
 # - APT periodic update and unattended upgrade settings
 # - Kernel parameter (sysctl) drop-in file and applied values
 # - Third-party APT repositories
@@ -22,7 +22,7 @@
 # 4. Verify timezone configuration
 # 5. Verify bashrc configuration
 # 6. Verify SSH group
-# 7. Verify MOTD news service
+# 7. Verify MOTD news service and fwupd-refresh drop-in
 # 8. Verify APT periodic settings
 # 9. Verify kernel parameters (sysctl)
 # 10. Verify third-party APT repositories
@@ -215,7 +215,7 @@
         success_msg: "SSH group GID verified: 10000"
 
 # -----------------------------------------------------------------------------
-# 7. MOTD News Service Verification
+# 7. MOTD News and fwupd-refresh Service Verification
 # -----------------------------------------------------------------------------
     - name: Verify | Check if motd-news.timer exists
       ansible.builtin.stat:
@@ -237,6 +237,39 @@
         fail_msg: "motd-news.timer is not disabled/masked"
         success_msg: "motd-news.timer verified as disabled/masked"
       when: _motd_timer_exists_.stat.exists
+
+    - name: Verify | Check if fwupd-refresh.service exists
+      ansible.builtin.stat:
+        path: "/lib/systemd/system/fwupd-refresh.service"
+      register: _fwupd_refresh_unit_
+
+    - name: Verify | Check fwupd-refresh drop-in file exists
+      ansible.builtin.stat:
+        path: "{{ __os_customize_fwupd_refresh_dropin_path }}"
+      register: _fwupd_refresh_dropin_
+      when: _fwupd_refresh_unit_.stat.exists
+
+    - name: Verify | Assert fwupd-refresh drop-in file exists
+      ansible.builtin.assert:
+        that:
+          - _fwupd_refresh_dropin_.stat.exists
+        fail_msg: "fwupd-refresh drop-in file does not exist at {{ __os_customize_fwupd_refresh_dropin_path }}"
+        success_msg: "fwupd-refresh drop-in file exists at {{ __os_customize_fwupd_refresh_dropin_path }}"
+      when: _fwupd_refresh_unit_.stat.exists
+
+    - name: Verify | Read fwupd-refresh drop-in file content
+      ansible.builtin.slurp:
+        src: "{{ __os_customize_fwupd_refresh_dropin_path }}"
+      register: _fwupd_refresh_dropin_content_
+      when: _fwupd_refresh_unit_.stat.exists
+
+    - name: Verify | Assert fwupd-refresh drop-in contains ConditionVirtualization=no
+      ansible.builtin.assert:
+        that:
+          - "'ConditionVirtualization=no' in (_fwupd_refresh_dropin_content_.content | b64decode)"
+        fail_msg: "fwupd-refresh drop-in does not contain ConditionVirtualization=no"
+        success_msg: "fwupd-refresh drop-in content verified with ConditionVirtualization=no"
+      when: _fwupd_refresh_unit_.stat.exists
 
 # -----------------------------------------------------------------------------
 # 8. APT Periodic Verification (Debian family)

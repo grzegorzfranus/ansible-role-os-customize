@@ -14,6 +14,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🚀 **Welcome Messages**: Deploy customized welcome message scripts for both Debian and EL-based systems
 - 🐚 **Shell Standardization**: Standardize and enhance .bashrc for root, skeleton, and all users
 - 🔄 **MOTD & APT Management**: Disable MOTD news service and configure APT periodic update / upgrade settings (`/etc/apt/apt.conf.d/`)
+- 🖥️ **Virtual Machine Optimization**: Skip `fwupd-refresh.service` on virtual machines and containers via systemd drop-in
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
 - ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
 - 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
@@ -122,6 +123,7 @@ os_customize_additional_packages: [bc, vim, nano]
 os_customize_configure_welcome_message: true
 os_customize_configure_bashrc: true
 os_customize_disable_motd_news: true
+os_customize_skip_fwupd_refresh_on_virtual: true
 os_customize_configure_ssh_group: true
 os_customize_ssh_group_name: "sshusers"
 os_customize_ssh_group_gid: 10000
@@ -189,6 +191,7 @@ os_customize_sysctl_settings:
 | `os_customize_configure_welcome_message` | Enable/disable welcome message and login banner | `true` |
 | `os_customize_configure_bashrc` | Enable/disable configuration of .bashrc files | `true` |
 | `os_customize_disable_motd_news` | Enable/disable motd-news.timer service | `true` |
+| `os_customize_skip_fwupd_refresh_on_virtual` | Skip `fwupd-refresh.service` on virtual machines and containers | `true` |
 | `os_customize_configure_ssh_group` | Enable/disable creation of a dedicated SSH users group | `true` |
 | `os_customize_ssh_group_name` | Name of the SSH users group | `"sshusers"` |
 | `os_customize_ssh_group_gid` | GID for the SSH users group | `10000` |
