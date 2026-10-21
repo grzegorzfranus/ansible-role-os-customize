@@ -122,12 +122,9 @@
         __os_customize_fwupd_refresh_unit.stat.exists | bool
 
     - name: OS Customize | configure | Deploy fwupd-refresh systemd virtualization drop-in
-      ansible.builtin.copy:
+      ansible.builtin.template:
+        src: systemd/fwupd-refresh-virtualization.conf.j2
         dest: "{{ __os_customize_fwupd_refresh_dropin_path }}"
-        content: |
-          # {{ ansible_managed }}
-          [Unit]
-          ConditionVirtualization=no
         owner: root
         group: root
         mode: "0644"
