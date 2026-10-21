@@ -82,6 +82,7 @@
         os_customize_configure_welcome_message: true
         os_customize_configure_bashrc: true
         os_customize_disable_motd_news: true
+        os_customize_skip_fwupd_refresh_on_virtual: true
         os_customize_configure_ssh_group: true
         os_customize_ssh_group_name: "sshusers"
         os_customize_ssh_group_gid: 10000

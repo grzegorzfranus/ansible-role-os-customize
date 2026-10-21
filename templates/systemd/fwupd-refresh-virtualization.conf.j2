@@ -1,0 +1,9 @@
+{{ ansible_managed | comment }}
+# =============================================================================
+# Systemd fwupd-refresh Virtualization Drop-In
+# =============================================================================
+# Systemd skips fwupd-refresh.service on virtual machines and containers.
+# =============================================================================
+
+[Unit]
+ConditionVirtualization=no

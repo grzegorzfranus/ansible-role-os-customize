@@ -98,7 +98,7 @@
 # -----------------------------------------------------------------------------
 # 6. MOTD News Configuration
 # -----------------------------------------------------------------------------
-# Validates MOTD news disable flag.
+# Validates MOTD news disable flag and skip fwupd-refresh on virtual flag.
 
 - name: OS Customize | assert | Validate MOTD news flag
   ansible.builtin.assert:
@@ -107,6 +107,14 @@
       - os_customize_disable_motd_news is boolean
     fail_msg: "os_customize_disable_motd_news must be a boolean (true/false)"
     success_msg: "MOTD news disable flag validated: {{ os_customize_disable_motd_news }}"
+
+- name: OS Customize | assert | Validate skip fwupd-refresh on virtual flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_skip_fwupd_refresh_on_virtual is defined
+      - os_customize_skip_fwupd_refresh_on_virtual is boolean
+    fail_msg: "os_customize_skip_fwupd_refresh_on_virtual must be a boolean (true/false)"
+    success_msg: "Skip fwupd-refresh on virtual flag validated: {{ os_customize_skip_fwupd_refresh_on_virtual }}"
 
 # -----------------------------------------------------------------------------
 # 7. SSH User Group Configuration

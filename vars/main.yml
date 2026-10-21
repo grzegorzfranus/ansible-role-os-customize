@@ -9,6 +9,7 @@
 #   1. Bashrc Configuration
 #   2. Banner and Login Script Paths
 #   3. Node.js Runtime (NodeSource)
+#   4. Systemd Service Drop-In Paths
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -67,3 +68,9 @@ __os_customize_nodejs_bin_dir: "/usr/bin"
 
 # First Node.js major release that no longer bundles the corepack binary
 __os_customize_corepack_unsupported_major_version: 25
+
+# -----------------------------------------------------------------------------
+# 4. Systemd Service Drop-In Paths
+# -----------------------------------------------------------------------------
+# Path to the fwupd-refresh systemd drop-in file (identical across all supported distributions)
+__os_customize_fwupd_refresh_dropin_path: "/etc/systemd/system/fwupd-refresh.service.d/60-ansible-os-customize.conf"
