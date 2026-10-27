@@ -1,0 +1,141 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: systemd-networkd IPv6 Off
+# =============================================================================
+# Manages systemd-networkd drop-in configuration to turn IPv6 link-local
+# addressing and router advertisements off on the uplink interface.
+# =============================================================================
+
+- name: OS Customize | networkd | Populate service facts
+  become: true
+  ansible.builtin.service_facts:
+
+- name: OS Customize | networkd | Determine whether systemd-networkd is active
+  ansible.builtin.set_fact:
+    __os_customize_networkd_active: "{{ (ansible_facts['services']['systemd-networkd.service']['state'] | default('')) == 'running' }}"
+
+- name: OS Customize | networkd | Find existing systemd-networkd drop-ins
+  become: true
+  ansible.builtin.find:
+    paths: "{{ __os_customize_networkd_dropin_root }}"
+    patterns:
+      - "{{ __os_customize_networkd_dropin_name }}"
+    recurse: true
+    file_type: file
+  register: __os_customize_found_networkd_dropin_files
+
+- name: OS Customize | networkd | Filter found drop-in file paths
+  ansible.builtin.set_fact:
+    __os_customize_found_networkd_dropins: >-
+      {{
+        __os_customize_found_networkd_dropin_files.files
+        | default([])
+        | map(attribute='path')
+        | select('match', '.*\.network\.d/' ~ __os_customize_networkd_dropin_name)
+        | list
+      }}
+
+- name: OS Customize | networkd | Remove systemd-networkd IPv6-off drop-ins
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ __os_customize_found_networkd_dropins }}"
+  when: >
+    not os_customize_configure_networkd_ipv6_off | bool
+  notify: "OS Customize | handlers | Reload systemd-networkd configuration"
+
+- name: OS Customize | networkd | Skip IPv6-off drop-in when systemd-networkd is inactive
+  ansible.builtin.debug:
+    msg: "systemd-networkd is not active on this host; skipping IPv6-off drop-in configuration"
+  when: >
+    os_customize_configure_networkd_ipv6_off | bool and
+    not __os_customize_networkd_active | bool
+
+- name: OS Customize | networkd | Configure systemd-networkd IPv6-off drop-in
+  when: >
+    os_customize_configure_networkd_ipv6_off | bool and
+    __os_customize_networkd_active | bool
+  block:
+    - name: OS Customize | networkd | Resolve target network interface
+      ansible.builtin.set_fact:
+        __os_customize_networkd_target_interface: >-
+          {{
+            os_customize_networkd_interface
+            if (os_customize_networkd_interface | length > 0)
+            else (ansible_facts['default_ipv4']['interface'] | default('', true))
+          }}
+
+    - name: OS Customize | networkd | Skip IPv6-off drop-in when interface cannot be resolved
+      ansible.builtin.debug:
+        msg: "Neither os_customize_networkd_interface nor a default IPv4 route interface is available; skipping configuration"
+      when: >
+        __os_customize_networkd_target_interface | length == 0
+
+    - name: OS Customize | networkd | Manage interface drop-in configuration
+      when: >
+        __os_customize_networkd_target_interface | length > 0
+      block:
+        # Justification: Query networkctl interface status in JSON format,
+        # which has no dedicated Ansible module.
+        - name: OS Customize | networkd | Query interface status from networkctl
+          become: true
+          ansible.builtin.command:
+            cmd: "networkctl status --json=short {{ __os_customize_networkd_target_interface }}"
+          changed_when: false
+          check_mode: false
+          failed_when: false
+          register: __os_customize_networkctl_status
+
+        - name: OS Customize | networkd | Extract NetworkFile from networkctl status
+          ansible.builtin.set_fact:
+            __os_customize_networkd_network_file: >-
+              {{
+                (((__os_customize_networkctl_status.stdout | from_json).get('NetworkFile') or '') | string)
+                if (__os_customize_networkctl_status.rc == 0 and __os_customize_networkctl_status.stdout | trim | length > 0)
+                else ''
+              }}
+
+        - name: OS Customize | networkd | Skip unmanaged network interface
+          ansible.builtin.debug:
+            msg: "Interface '{{ __os_customize_networkd_target_interface }}' is not managed by systemd-networkd; skipping drop-in configuration"
+          when: >
+            __os_customize_networkd_network_file | length == 0 or
+            not (__os_customize_networkd_network_file is match('^/.*\.network$'))
+
+        - name: OS Customize | networkd | Deploy IPv6-off drop-in for managed interface
+          when: >
+            __os_customize_networkd_network_file | length > 0 and
+            (__os_customize_networkd_network_file is match('^/.*\.network$'))
+          block:
+            - name: OS Customize | networkd | Ensure systemd-networkd drop-in directory exists
+              become: true
+              ansible.builtin.file:
+                path: "{{ __os_customize_networkd_dropin_root }}/{{ __os_customize_networkd_network_file | basename }}.d"
+                state: directory
+                owner: root
+                group: root
+                mode: "0755"
+
+            - name: OS Customize | networkd | Deploy systemd-networkd IPv6-off drop-in
+              become: true
+              ansible.builtin.template:
+                src: systemd/networkd-ipv6-off.conf.j2
+                dest: "{{ __os_customize_networkd_dropin_root }}/{{ __os_customize_networkd_network_file | basename }}.d/{{ __os_customize_networkd_dropin_name }}"
+                owner: root
+                group: root
+                mode: "0644"
+              notify: "OS Customize | handlers | Reload systemd-networkd configuration"
+
+            - name: OS Customize | networkd | Remove stale systemd-networkd IPv6-off drop-ins
+              become: true
+              ansible.builtin.file:
+                path: "{{ item }}"
+                state: absent
+              loop: >-
+                {{
+                  __os_customize_found_networkd_dropins
+                  | reject('equalto', __os_customize_networkd_dropin_root ~ '/' ~ (__os_customize_networkd_network_file | basename) ~ '.d/' ~ __os_customize_networkd_dropin_name)
+                  | list
+                }}
+              notify: "OS Customize | handlers | Reload systemd-networkd configuration"

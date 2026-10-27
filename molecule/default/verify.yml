@@ -12,6 +12,7 @@
 # - MOTD news service and fwupd-refresh virtualization drop-in
 # - APT periodic update and unattended upgrade settings
 # - Kernel parameter (sysctl) drop-in file and applied values
+# - systemd-networkd IPv6-off drop-in
 # - Third-party APT repositories
 # - Node.js runtime, npm and Corepack package managers
 #
@@ -25,9 +26,10 @@
 # 7. Verify MOTD news service and fwupd-refresh drop-in
 # 8. Verify APT periodic settings
 # 9. Verify kernel parameters (sysctl)
-# 10. Verify third-party APT repositories
-# 11. Verify Node.js, npm and Corepack
-# 12. Final summary
+# 10. Verify systemd-networkd IPv6-off drop-in
+# 11. Verify third-party APT repositories
+# 12. Verify Node.js, npm and Corepack
+# 13. Final summary
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -336,7 +338,124 @@
         success_msg: "Kernel parameter net.ipv4.ip_forward is verified as 0"
 
 # -----------------------------------------------------------------------------
-# 10. Third-Party APT Repositories Verification (Debian family)
+# 10. systemd-networkd IPv6 Off Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if systemd-networkd is active
+      ansible.builtin.command:
+        cmd: systemctl is-active systemd-networkd.service
+      register: _networkd_active_
+      changed_when: false
+      failed_when: false
+
+    - name: Verify | Query networkctl status for dummy0 in JSON format
+      ansible.builtin.command:
+        cmd: networkctl status --json=short dummy0
+      register: _dummy0_json_status_
+      changed_when: false
+      failed_when: false
+
+    - name: Verify | Determine whether dummy0 is configured by systemd-networkd
+      ansible.builtin.set_fact:
+        _networkd_dummy0_configured: >-
+          {{
+            _networkd_active_.rc == 0 and
+            _dummy0_json_status_.rc == 0 and
+            ('{' in _dummy0_json_status_.stdout) and
+            ((_dummy0_json_status_.stdout | from_json).get('NetworkFile') == '/etc/systemd/network/10-molecule-dummy0.network')
+          }}
+
+    - name: Verify | Check if networkd IPv6-off drop-in exists
+      ansible.builtin.stat:
+        path: /etc/systemd/network/10-molecule-dummy0.network.d/60-ansible-os-customize.conf
+      register: _networkd_dropin_
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Assert networkd IPv6-off drop-in exists with mode 0644
+      ansible.builtin.assert:
+        that:
+          - _networkd_dropin_.stat.exists
+          - _networkd_dropin_.stat.mode == "0644"
+        fail_msg: "networkd IPv6-off drop-in does not exist or has incorrect mode"
+        success_msg: "networkd IPv6-off drop-in exists with mode 0644"
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Read networkd IPv6-off drop-in file content
+      ansible.builtin.slurp:
+        src: /etc/systemd/network/10-molecule-dummy0.network.d/60-ansible-os-customize.conf
+      register: _networkd_dropin_content_
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Assert networkd IPv6-off drop-in contains LinkLocalAddressing=no and IPv6AcceptRA=no
+      ansible.builtin.assert:
+        that:
+          - "'LinkLocalAddressing=no' in (_networkd_dropin_content_.content | b64decode)"
+          - "'IPv6AcceptRA=no' in (_networkd_dropin_content_.content | b64decode)"
+        fail_msg: "networkd IPv6-off drop-in does not contain expected directives"
+        success_msg: "networkd IPv6-off drop-in verified with LinkLocalAddressing=no and IPv6AcceptRA=no"
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Assert drop-in is listed in dummy0 NetworkFileDropins
+      ansible.builtin.assert:
+        that:
+          - >-
+            '/etc/systemd/network/10-molecule-dummy0.network.d/60-ansible-os-customize.conf'
+            in (_dummy0_json_status_.stdout | from_json).get('NetworkFileDropins', [])
+        fail_msg: "networkd drop-in is not listed in dummy0 NetworkFileDropins"
+        success_msg: "networkd drop-in verified in dummy0 NetworkFileDropins"
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Query IPv6 addresses on dummy0
+      ansible.builtin.command:
+        cmd: ip -6 -o addr show dev dummy0
+      register: _dummy0_ip6_
+      changed_when: false
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Query IPv4 addresses on dummy0
+      ansible.builtin.command:
+        cmd: ip -4 -o addr show dev dummy0
+      register: _dummy0_ip4_
+      changed_when: false
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Assert dummy0 has no IPv6 address and retains IPv4 address
+      ansible.builtin.assert:
+        that:
+          - _dummy0_ip6_.stdout | trim == ""
+          - "'192.0.2.10/24' in _dummy0_ip4_.stdout"
+        fail_msg: "dummy0 address state unexpected (expected no IPv6 and 192.0.2.10/24 present)"
+        success_msg: "dummy0 verified without IPv6 address and with 192.0.2.10/24"
+      when: >
+        _networkd_dummy0_configured | bool
+
+    - name: Verify | Check for any networkd drop-in files under /etc/systemd/network (fallback)
+      ansible.builtin.find:
+        paths: /etc/systemd/network
+        patterns: "60-ansible-os-customize.conf"
+        recurse: true
+        file_type: file
+      register: _fallback_networkd_dropins_
+      when: >
+        not _networkd_dummy0_configured | bool
+
+    - name: Verify | Assert no networkd drop-in exists when networkd or dummy0 interface is unavailable
+      ansible.builtin.assert:
+        that:
+          - _fallback_networkd_dropins_.matched == 0
+        fail_msg: "Unexpected 60-ansible-os-customize.conf file found under /etc/systemd/network"
+        success_msg: "Verified no 60-ansible-os-customize.conf drop-in exists under /etc/systemd/network"
+      when: >
+        not _networkd_dummy0_configured | bool
+
+# -----------------------------------------------------------------------------
+# 11. Third-Party APT Repositories Verification (Debian family)
 # -----------------------------------------------------------------------------
     - name: Verify | Check if github-cli deb822 sources file exists (Debian)
       ansible.builtin.stat:
@@ -411,7 +530,7 @@
       when: ansible_facts['os_family'] == 'Debian'
 
 # -----------------------------------------------------------------------------
-# 11. Node.js, npm and Corepack Verification
+# 12. Node.js, npm and Corepack Verification
 # -----------------------------------------------------------------------------
     - name: Verify | Check NodeSource apt keyring (Debian)
       ansible.builtin.stat:
@@ -527,7 +646,7 @@
         success_msg: "Yarn verified through Corepack: {{ _yarn_version_.stdout }}"
 
 # -----------------------------------------------------------------------------
-# 12. Final Summary
+# 13. Final Summary
 # -----------------------------------------------------------------------------
     - name: Verify | Show verification results
       ansible.builtin.debug:
@@ -545,6 +664,7 @@
           - "MOTD news: Disabled"
           - "APT periodic: Disabled"
           - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
+          - "systemd-networkd: IPv6-off drop-in verified"
           - "APT repositories: github-cli deb822 source and keyring verified (Debian)"
           - "Node.js: Runtime, npm and Corepack verified"
           - "OS Customize role verification: PASSED"

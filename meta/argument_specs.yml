@@ -108,6 +108,23 @@ argument_specs:
         default: {}
         description: "Mapping of kernel parameter name to value, written in the order given."
 
+      os_customize_configure_networkd_ipv6_off:
+        type: bool
+        default: false
+        description: "Deploy a systemd-networkd drop-in that turns IPv6 link-local addressing and router advertisements off on the uplink."
+
+      os_customize_networkd_interface:
+        type: str
+        default: ""
+        description: "Network interface to configure, or an empty string to use the interface of the default IPv4 route."
+
+      os_customize_networkd_reconfigure:
+        type: bool
+        default: false
+        description: >-
+          Apply the change now with 'networkctl reload', which reconfigures the links whose network file changed;
+          default false writes or removes the drop-in only, and it applies at the next systemd-networkd start or boot.
+
       os_customize_configure_nodejs:
         type: bool
         default: false

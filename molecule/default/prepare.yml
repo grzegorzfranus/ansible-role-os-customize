@@ -12,6 +12,7 @@
 # 1. Fix system file permissions
 # 2. Install timezone data
 # 3. Simulate legacy APT repository setup (Debian)
+# 4. Setup systemd-networkd dummy interface (Debian)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -119,3 +120,81 @@
         _gh_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else ('arm64' if ansible_facts['architecture'] == 'aarch64' else ansible_facts['architecture']) }}"
       when: >
         ansible_facts['os_family'] == "Debian"
+
+# -----------------------------------------------------------------------------
+# 4. systemd-networkd Dummy Interface Setup (Debian family)
+# -----------------------------------------------------------------------------
+    - name: Prepare | Check if systemd-networkd binary exists (Debian)
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: __prepare_networkd_bin
+      loop:
+        - /usr/lib/systemd/systemd-networkd
+        - /lib/systemd/systemd-networkd
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Setup systemd-networkd dummy interface (Debian)
+      when: >
+        ansible_facts['os_family'] == "Debian" and
+        (__prepare_networkd_bin.results | default([]) | selectattr('stat.exists') | list | length > 0)
+      block:
+        - name: Prepare | Install udev package (Debian)
+          ansible.builtin.apt:
+            name: udev
+            state: present
+
+        - name: Prepare | Start systemd-udevd service (Debian)
+          ansible.builtin.systemd_service:
+            name: systemd-udevd
+            state: started
+
+        - name: Prepare | Ensure /etc/systemd/network directory exists
+          ansible.builtin.file:
+            path: /etc/systemd/network
+            state: directory
+            owner: root
+            group: root
+            mode: "0755"
+
+        - name: Prepare | Create 10-molecule-dummy0.netdev
+          ansible.builtin.copy:
+            dest: /etc/systemd/network/10-molecule-dummy0.netdev
+            content: |
+              [NetDev]
+              Name=dummy0
+              Kind=dummy
+            owner: root
+            group: root
+            mode: "0644"
+
+        - name: Prepare | Create 10-molecule-dummy0.network
+          ansible.builtin.copy:
+            dest: /etc/systemd/network/10-molecule-dummy0.network
+            content: |
+              [Match]
+              Name=dummy0
+
+              [Network]
+              Address=192.0.2.10/24
+            owner: root
+            group: root
+            mode: "0644"
+
+        - name: Prepare | Enable and restart systemd-networkd
+          ansible.builtin.systemd_service:
+            name: systemd-networkd
+            enabled: true
+            state: restarted
+
+        - name: Prepare | Wait until networkctl status dummy0 reports NetworkFile
+          ansible.builtin.command:
+            cmd: networkctl status --json=short dummy0
+          register: __prepare_dummy0_status
+          retries: 10
+          delay: 2
+          until: >
+            __prepare_dummy0_status.rc == 0 and
+            ('{' in __prepare_dummy0_status.stdout) and
+            ((__prepare_dummy0_status.stdout | from_json).get('NetworkFile') == '/etc/systemd/network/10-molecule-dummy0.network')
+          changed_when: false

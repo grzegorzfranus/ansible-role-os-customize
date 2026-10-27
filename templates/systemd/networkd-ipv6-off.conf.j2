@@ -1,0 +1,11 @@
+{{ ansible_managed | comment }}
+# =============================================================================
+# Systemd-Networkd IPv6-Off Drop-In
+# =============================================================================
+# Turns off IPv6 link-local addressing and router advertisements on the uplink
+# to prevent conflicts between netplan defaults and sysctl disable_ipv6 settings.
+# =============================================================================
+
+[Network]
+LinkLocalAddressing=no
+IPv6AcceptRA=no
