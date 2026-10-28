@@ -24,10 +24,11 @@
 #   8. APT Periodic Configuration
 #   9. Kernel Parameters (sysctl)
 #   10. systemd-networkd IPv6 Off
-#   11. Node.js Runtime (NodeSource)
-#   12. npm Package Manager
-#   13. Corepack Package Managers (Yarn, pnpm)
-#   14. Third-Party APT Repositories (Debian family)
+#   11. Netplan Default Route On-Link
+#   12. Node.js Runtime (NodeSource)
+#   13. npm Package Manager
+#   14. Corepack Package Managers (Yarn, pnpm)
+#   15. Third-Party APT Repositories (Debian family)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -151,13 +152,22 @@ os_customize_configure_networkd_ipv6_off: false
 # Valid values: network interface name string e.g. "eth0" or ""
 os_customize_networkd_interface: ""
 
-# Apply the change now with 'networkctl reload', which reconfigures the links whose network file changed;
-# default false writes or removes the drop-in only, and it applies at the next systemd-networkd start or boot
+# Apply the change now with 'networkctl reload', which reconfigures the links whose network file changed
+# (and applies netplan changes at once after 'netplan generate'); default false writes or removes the drop-in
+# / edits netplan only, and it applies at the next systemd-networkd start or boot
 # Valid values: true, false
 os_customize_networkd_reconfigure: false
 
 # -----------------------------------------------------------------------------
-# 11. Node.js Runtime (NodeSource)
+# 11. Netplan Default Route On-Link
+# -----------------------------------------------------------------------------
+# Set on-link: true on every IPv4 default route in /etc/netplan/*.yaml;
+# turning it off later does not remove the flag
+# Valid values: true, false
+os_customize_configure_netplan_default_route_onlink: false
+
+# -----------------------------------------------------------------------------
+# 12. Node.js Runtime (NodeSource)
 # -----------------------------------------------------------------------------
 # Enable/disable installation of Node.js from the official NodeSource repository
 # Valid values: true, false
@@ -200,7 +210,7 @@ os_customize_nodejs_apt_pin: true
 os_customize_nodejs_apt_pin_priority: 600
 
 # -----------------------------------------------------------------------------
-# 12. npm Package Manager
+# 13. npm Package Manager
 # -----------------------------------------------------------------------------
 # Enable/disable npm management. Requires os_customize_configure_nodejs to be enabled.
 # Valid values: true, false
@@ -215,7 +225,7 @@ os_customize_npm_version: ""
 os_customize_npm_global_packages: []
 
 # -----------------------------------------------------------------------------
-# 13. Corepack Package Managers (Yarn, pnpm)
+# 14. Corepack Package Managers (Yarn, pnpm)
 # -----------------------------------------------------------------------------
 # Enable/disable Corepack shims. Requires os_customize_configure_nodejs and a Node.js major
 # version below 25, because Node.js 25 no longer bundles the corepack binary.
@@ -230,7 +240,7 @@ os_customize_corepack_packages:
     version: "stable"
 
 # -----------------------------------------------------------------------------
-# 14. Third-Party APT Repositories (Debian family)
+# 15. Third-Party APT Repositories (Debian family)
 # -----------------------------------------------------------------------------
 # List of third-party APT repositories to configure as deb822 sources on Debian-family hosts.
 # Each entry is a mapping configuring a repository under /etc/apt/sources.list.d/<name>.sources

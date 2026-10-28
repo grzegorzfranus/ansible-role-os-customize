@@ -122,8 +122,14 @@ argument_specs:
         type: bool
         default: false
         description: >-
-          Apply the change now with 'networkctl reload', which reconfigures the links whose network file changed;
-          default false writes or removes the drop-in only, and it applies at the next systemd-networkd start or boot.
+          Apply the change now with 'networkctl reload', which reconfigures the links whose network file changed
+          (and applies netplan changes at once after 'netplan generate'); default false writes or removes the
+          drop-in / edits netplan only, and it applies at the next systemd-networkd start or boot.
+
+      os_customize_configure_netplan_default_route_onlink:
+        type: bool
+        default: false
+        description: "Set on-link: true on every IPv4 default route in /etc/netplan/*.yaml; turning it off later does not remove the flag."
 
       os_customize_configure_nodejs:
         type: bool

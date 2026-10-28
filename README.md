@@ -18,6 +18,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
 - ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
 - 🌐 **systemd-networkd IPv6 Off**: Turn IPv6 link-local addressing and router advertisements off on the uplink via systemd-networkd drop-in to prevent conflicts with sysctl disable_ipv6
+- 🌐 **Netplan Default Route On-Link**: Set `on-link: true` on IPv4 default routes across `/etc/netplan/*.yaml` to prevent gateway unreachable routing errors on providers that route subnet neighbours through the gateway (e.g. Contabo)
 - 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
 - 📦 **Third-Party APT Repositories**: Configure generic third-party APT repositories as deb822 sources (`.sources`), download signing keys, and clean up legacy `.list` files on Debian-family systems
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
@@ -32,7 +33,8 @@ The role provides modular system customization tasks organized into functional a
    ├── [Configure Core OS (tasks/configure.yml)]
    ├── [Configure Shell (tasks/bashrc.yml)]
    ├── [Configure Kernel Parameters (tasks/sysctl.yml)]
-   └── [Configure systemd-networkd (tasks/networkd.yml)]
+   ├── [Configure systemd-networkd (tasks/networkd.yml)]
+   └── [Configure Netplan (tasks/netplan.yml)]
 ```
 
 - **Core OS Customization**: Timezone settings, security banner deployment, welcome message setup, and package updates.
@@ -40,6 +42,7 @@ The role provides modular system customization tasks organized into functional a
 - **Shell Customization**: Appends standardized aliases, history settings, and shell prompts to global and user shell profiles.
 - **Kernel Parameter Customization**: Deploys managed sysctl settings via a drop-in file and reloads kernel parameters.
 - **systemd-networkd Customization**: Deploys an interface drop-in turning off IPv6 link-local addressing and router advertisements.
+- **Netplan Customization**: Configures `on-link: true` for IPv4 default routes in netplan configuration files.
 
 ## 📋 Requirements
 
@@ -139,6 +142,7 @@ os_customize_sysctl_settings: {}
 os_customize_configure_networkd_ipv6_off: false
 os_customize_networkd_interface: ""
 os_customize_networkd_reconfigure: false
+os_customize_configure_netplan_default_route_onlink: false
 ```
 
 ### Advanced Configuration
@@ -201,6 +205,27 @@ IPv6AcceptRA=no
 - **Removal**: Setting `os_customize_configure_networkd_ipv6_off: false` removes any `60-ansible-os-customize.conf` drop-ins under `/etc/systemd/network/*.network.d/` and notifies the reload handler if `systemd-networkd` is active and `os_customize_networkd_reconfigure: true`.
 - **Inactive Service**: When `systemd-networkd` is not active on the host, configuration is skipped with a debug message without failing the run.
 
+### Netplan Default Route On-Link
+
+Some providers (such as Contabo) install an `@reboot` cron job that overrides the uplink kernel prefix route through the default gateway, preventing subsequent `networkctl reload` or `reconfigure` runs from adding the default route due to an unreachable gateway error.
+
+Enabling `os_customize_configure_netplan_default_route_onlink: true` sets `on-link: true` on every IPv4 default route (`to: default` or `to: 0.0.0.0/0`) in `/etc/netplan/*.yaml`, which Netplan renders into `GatewayOnLink=true` in the corresponding systemd-networkd `.network` file:
+
+```yaml
+routes:
+  - to: default
+    via: 192.0.2.1
+    on-link: true  # renders GatewayOnLink=true in systemd-networkd
+```
+
+- **Why In Place**: A systemd-networkd drop-in with a second route was measured and rejected because systemd requests both routes simultaneously and leaves the link unconfigured. A second Netplan file was also measured and rejected because Netplan 1.2 de-duplicates routes by destination and gateway, dropping the `on-link` flag defined in subsequent files.
+- **Apply**: When a Netplan configuration file changes, the role triggers `netplan generate`, then `networkctl reload` only with `os_customize_networkd_reconfigure: true`; otherwise the regenerated configuration becomes effective at the next systemd-networkd start or boot.
+- **Backup**: `backup: true` leaves `<file>.yaml.<id>.<timestamp>~` next to the file; netplan reads only `*.yaml`, so the copy is ignored.
+- **gateway4**: Configurations using the deprecated `gateway4` key cannot be marked on-link by the role and trigger an informative debug message.
+- **Turning Off**: Turning `os_customize_configure_netplan_default_route_onlink` off later does not remove `on-link: true` from previously updated Netplan files.
+- **No Netplan**: When Netplan is not installed on the host, configuration is skipped with a debug message without failing the run.
+- **Check Mode**: Supported; file diffs and potential modifications are previewed without writing to `/etc/netplan/`.
+
 ## 📊 Variables
 
 ### General Options
@@ -227,7 +252,8 @@ IPv6AcceptRA=no
 | `os_customize_sysctl_settings` | Mapping of kernel parameter to value, written in the given order | `{}` |
 | `os_customize_configure_networkd_ipv6_off` | Deploy a drop-in turning IPv6 link-local addressing and router advertisements off on the uplink | `false` |
 | `os_customize_networkd_interface` | Interface to configure (empty string resolves to the default IPv4 route interface) | `""` |
-| `os_customize_networkd_reconfigure` | Apply the change now with `networkctl reload`, which reconfigures the links whose network file changed (default false applies at next start or boot) | `false` |
+| `os_customize_networkd_reconfigure` | Apply changes now with `networkctl reload` (after `netplan generate`), reconfiguring links whose network file changed (default false applies at next start or boot) | `false` |
+| `os_customize_configure_netplan_default_route_onlink` | Set `on-link: true` on every IPv4 default route in `/etc/netplan/*.yaml` (turning off later does not remove the flag) | `false` |
 
 ### Node.js, npm and Corepack Options
 
@@ -378,6 +404,19 @@ networkctl status eth0
 networkctl cat 10-netplan-eth0.network
 ```
 
+### Verify Netplan Default Route On-Link
+
+```bash
+# View parsed netplan ethernet configurations
+netplan get ethernets
+
+# View rendered systemd-networkd configuration file
+networkctl cat 10-netplan-eth0.network
+
+# Verify active IPv4 default route
+ip -4 route show default
+```
+
 ### Verify Node.js, npm and Corepack
 
 ```bash
@@ -472,6 +511,8 @@ ansible-role-os-customize/
 │   └── zizmor.yml                     # zizmor policy: @main allowed for github-workflows only
 ├── defaults/
 │   └── main.yml             # Default role variables
+├── filter_plugins/
+│   └── netplan.py           # Netplan route manipulation and gateway4 filters
 ├── handlers/
 │   └── main.yml             # Event handlers
 ├── meta/
@@ -487,6 +528,7 @@ ansible-role-os-customize/
 │   ├── bashrc.yml           # .bashrc configuration
 │   ├── sysctl.yml           # Kernel parameters configuration
 │   ├── networkd.yml         # systemd-networkd IPv6-off drop-in configuration
+│   ├── netplan.yml          # Netplan default route on-link configuration
 │   ├── nodejs.yml           # Node.js OS family dispatcher
 │   ├── nodejs_debian.yml    # NodeSource APT repository and runtime install
 │   ├── nodejs_redhat.yml    # NodeSource yum repository and runtime install
@@ -521,7 +563,8 @@ All tags (except `always`) are prefixed with `os_customize_` to avoid collisions
 | `os_customize_apt_repositories` | Third-party APT repository configuration tasks |
 | `os_customize_bashrc` | Shell environment (`.bashrc`) configuration tasks |
 | `os_customize_sysctl` | Kernel parameter drop-in configuration tasks |
-| `os_customize_networkd` | systemd-networkd IPv6-off drop-in configuration tasks |
+| `os_customize_networkd` | systemd-networkd IPv6-off drop-in and Netplan default route on-link configuration tasks |
+| `os_customize_netplan` | Netplan default route on-link configuration tasks (also executed by `os_customize_networkd`) |
 | `os_customize_nodejs` | Node.js runtime, npm and Corepack configuration tasks |
 
 ## CI/CD Pipeline

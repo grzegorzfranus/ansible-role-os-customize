@@ -13,6 +13,7 @@
 # - APT periodic update and unattended upgrade settings
 # - Kernel parameter (sysctl) drop-in file and applied values
 # - systemd-networkd IPv6-off drop-in
+# - Netplan default route on-link
 # - Third-party APT repositories
 # - Node.js runtime, npm and Corepack package managers
 #
@@ -27,9 +28,10 @@
 # 8. Verify APT periodic settings
 # 9. Verify kernel parameters (sysctl)
 # 10. Verify systemd-networkd IPv6-off drop-in
-# 11. Verify third-party APT repositories
-# 12. Verify Node.js, npm and Corepack
-# 13. Final summary
+# 11. Verify netplan default route on-link
+# 12. Verify third-party APT repositories
+# 13. Verify Node.js, npm and Corepack
+# 14. Final summary
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -458,7 +460,106 @@
         not _networkd_dummy0_configured | bool
 
 # -----------------------------------------------------------------------------
-# 11. Third-Party APT Repositories Verification (Debian family)
+# 11. Netplan Default Route On-Link Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Check if netplan binary exists
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: _netplan_bin_check_
+      loop:
+        - /usr/sbin/netplan
+        - /sbin/netplan
+
+    - name: Verify | Determine whether netplan is present
+      ansible.builtin.set_fact:
+        _netplan_present: >-
+          {{
+            (_netplan_bin_check_.results
+             | selectattr('stat.exists', 'defined')
+             | selectattr('stat.exists')
+             | list
+             | length) > 0
+          }}
+
+    - name: Verify | Stat /etc/netplan/60-molecule.yaml
+      ansible.builtin.stat:
+        path: /etc/netplan/60-molecule.yaml
+      register: _netplan_molecule_file_
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Assert /etc/netplan/60-molecule.yaml exists and is mode 0600
+      ansible.builtin.assert:
+        that:
+          - _netplan_molecule_file_.stat.exists
+          - _netplan_molecule_file_.stat.mode == "0600"
+        fail_msg: "/etc/netplan/60-molecule.yaml does not exist or has incorrect mode"
+        success_msg: "/etc/netplan/60-molecule.yaml exists with mode 0600"
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Read /etc/netplan/60-molecule.yaml content
+      ansible.builtin.slurp:
+        src: /etc/netplan/60-molecule.yaml
+      register: _netplan_molecule_content_
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Parse /etc/netplan/60-molecule.yaml YAML data
+      ansible.builtin.set_fact:
+        _netplan_molecule_data: "{{ _netplan_molecule_content_.content | b64decode | from_yaml }}"
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Assert netplan parsed data structure and routes
+      ansible.builtin.assert:
+        that:
+          - "(_netplan_molecule_data['network']['ethernets']['molecule0']['routes'] | selectattr('to', 'equalto', 'default') | first)['on-link'] is defined"
+          - "(_netplan_molecule_data['network']['ethernets']['molecule0']['routes'] | selectattr('to', 'equalto', 'default') | first)['on-link'] is true"
+          - "(_netplan_molecule_data['network']['ethernets']['molecule0']['routes'] | selectattr('to', 'equalto', 'default') | first)['via'] == '198.51.100.1'"
+          - "(_netplan_molecule_data['network']['ethernets']['molecule0']['routes'] | selectattr('to', 'equalto', '203.0.113.0/24') | first)['on-link'] is not defined"
+          - "(_netplan_molecule_data['network']['ethernets']['molecule0']['routes'] | selectattr('to', 'equalto', '203.0.113.0/24') | first)['via'] == '192.0.2.1'"
+          - "_netplan_molecule_data['network']['ethernets']['molecule0']['addresses'] == ['192.0.2.20/24']"
+          - "_netplan_molecule_data['network']['ethernets']['molecule0']['match']['name'] == 'molecule0'"
+        fail_msg: "Netplan route configuration or interface properties do not match expectations"
+        success_msg: "Netplan route on-link flag and interface properties verified successfully"
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Stat /run/systemd/network/10-netplan-molecule0.network
+      ansible.builtin.stat:
+        path: /run/systemd/network/10-netplan-molecule0.network
+      register: _netplan_rendered_file_
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Assert /run/systemd/network/10-netplan-molecule0.network exists
+      ansible.builtin.assert:
+        that:
+          - _netplan_rendered_file_.stat.exists
+        fail_msg: "/run/systemd/network/10-netplan-molecule0.network does not exist"
+        success_msg: "/run/systemd/network/10-netplan-molecule0.network verified as present"
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Read /run/systemd/network/10-netplan-molecule0.network content
+      ansible.builtin.slurp:
+        src: /run/systemd/network/10-netplan-molecule0.network
+      register: _netplan_rendered_content_
+      when: >
+        _netplan_present | bool
+
+    - name: Verify | Assert GatewayOnLink=true appears exactly once in rendered network file
+      ansible.builtin.assert:
+        that:
+          - (_netplan_rendered_content_.content | b64decode | regex_findall('GatewayOnLink=true') | length) == 1
+        fail_msg: "GatewayOnLink=true does not appear exactly once in /run/systemd/network/10-netplan-molecule0.network"
+        success_msg: "GatewayOnLink=true verified exactly once in /run/systemd/network/10-netplan-molecule0.network"
+      when: >
+        _netplan_present | bool
+
+# -----------------------------------------------------------------------------
+# 12. Third-Party APT Repositories Verification (Debian family)
 # -----------------------------------------------------------------------------
     - name: Verify | Check if github-cli deb822 sources file exists (Debian)
       ansible.builtin.stat:
@@ -533,7 +634,7 @@
       when: ansible_facts['os_family'] == 'Debian'
 
 # -----------------------------------------------------------------------------
-# 12. Node.js, npm and Corepack Verification
+# 13. Node.js, npm and Corepack Verification
 # -----------------------------------------------------------------------------
     - name: Verify | Check NodeSource apt keyring (Debian)
       ansible.builtin.stat:
@@ -649,7 +750,7 @@
         success_msg: "Yarn verified through Corepack: {{ _yarn_version_.stdout }}"
 
 # -----------------------------------------------------------------------------
-# 13. Final Summary
+# 14. Final Summary
 # -----------------------------------------------------------------------------
     - name: Verify | Show verification results
       ansible.builtin.debug:
@@ -668,6 +769,7 @@
           - "APT periodic: Disabled"
           - "Kernel parameters: sysctl drop-in deployed, net.ipv4.ip_forward=0"
           - "systemd-networkd: IPv6-off drop-in verified"
+          - "Netplan: Default route on-link verified (where netplan exists)"
           - "APT repositories: github-cli deb822 source and keyring verified (Debian)"
           - "Node.js: Runtime, npm and Corepack verified"
           - "OS Customize role verification: PASSED"
