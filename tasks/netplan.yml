@@ -1,0 +1,93 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: Netplan Default Route On-Link
+# =============================================================================
+# Manages Netplan configuration files to set on-link: true on IPv4 default
+# routes, preventing gateway unreachable routing failures on providers
+# that route neighbours in the same subnet through the gateway.
+# =============================================================================
+
+- name: OS Customize | netplan | Configure netplan default route on-link
+  when: >
+    os_customize_configure_netplan_default_route_onlink | bool
+  block:
+    - name: OS Customize | netplan | Stat netplan binary candidates
+      become: true
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ __os_customize_netplan_binaries }}"
+      register: __os_customize_netplan_bin_stats
+
+    - name: OS Customize | netplan | Determine whether netplan binary exists
+      ansible.builtin.set_fact:
+        __os_customize_netplan_binary_exists: >-
+          {{
+            (__os_customize_netplan_bin_stats.results
+             | selectattr('stat.exists', 'defined')
+             | selectattr('stat.exists')
+             | list
+             | length) > 0
+          }}
+
+    - name: OS Customize | netplan | Skip netplan configuration when netplan is not installed
+      ansible.builtin.debug:
+        msg: "Netplan is not installed on this host; skipping netplan default route on-link configuration"
+      when: >
+        not __os_customize_netplan_binary_exists | bool
+
+    - name: OS Customize | netplan | Process netplan configuration files
+      when: >
+        __os_customize_netplan_binary_exists | bool
+      block:
+        - name: OS Customize | netplan | Find netplan configuration files
+          become: true
+          ansible.builtin.find:
+            paths: "{{ __os_customize_netplan_config_dir }}"
+            patterns:
+              - "*.yaml"
+            recurse: false
+            file_type: file
+          register: __os_customize_netplan_files
+
+        - name: OS Customize | netplan | Slurp netplan configuration files
+          become: true
+          ansible.builtin.slurp:
+            src: "{{ item.path }}"
+          loop: "{{ __os_customize_netplan_files.files | default([]) }}"
+          loop_control:
+            label: "{{ item.path }}"
+          register: __os_customize_netplan_slurps
+
+        - name: OS Customize | netplan | Update netplan default route on-link
+          become: true
+          ansible.builtin.copy:
+            dest: "{{ item.item.path }}"
+            content: "{{ _new_data | to_nice_yaml(indent=2, sort_keys=false) }}"
+            owner: "{{ item.item.pw_name | default('root', true) }}"
+            group: "{{ item.item.gr_name | default('root', true) }}"
+            mode: "{{ item.item.mode | default('0600', true) }}"
+            backup: true
+          vars:
+            _orig_data: "{{ (item.content | b64decode | from_yaml) if (item.content | default('', true) | length > 0) else {} }}"
+            _new_data: "{{ _orig_data | os_customize_netplan_default_route_onlink }}"
+          when: >
+            _orig_data is mapping and
+            _new_data != _orig_data
+          loop: "{{ __os_customize_netplan_slurps.results | default([]) }}"
+          loop_control:
+            label: "{{ item.item.path }}"
+          notify:
+            - "OS Customize | handlers | Generate netplan configuration"
+            - "OS Customize | handlers | Reload systemd-networkd configuration"
+
+        - name: OS Customize | netplan | Warn about deprecated gateway4 usage
+          ansible.builtin.debug:
+            msg: "Netplan file '{{ item.item.path }}' uses deprecated 'gateway4' on interface(s) {{ _gateway4_ids | join(', ') }}; the role cannot mark it on-link"
+          vars:
+            _orig_data: "{{ (item.content | b64decode | from_yaml) if (item.content | default('', true) | length > 0) else {} }}"
+            _gateway4_ids: "{{ _orig_data | os_customize_netplan_gateway4_ids }}"
+          when: >
+            _gateway4_ids | length > 0
+          loop: "{{ __os_customize_netplan_slurps.results | default([]) }}"
+          loop_control:
+            label: "{{ item.item.path }}"

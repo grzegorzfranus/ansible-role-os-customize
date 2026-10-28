@@ -13,6 +13,7 @@
 # 2. Install timezone data
 # 3. Simulate legacy APT repository setup (Debian)
 # 4. Setup systemd-networkd dummy interface (Debian)
+# 5. Netplan Test Configuration (Debian family)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -198,3 +199,47 @@
             ('{' in __prepare_dummy0_status.stdout) and
             ((__prepare_dummy0_status.stdout | from_json).get('NetworkFile') == '/etc/systemd/network/10-molecule-dummy0.network')
           changed_when: false
+
+# -----------------------------------------------------------------------------
+# 5. Netplan Test Configuration (Debian family)
+# -----------------------------------------------------------------------------
+    - name: Prepare | Install netplan.io package (Debian)
+      ansible.builtin.apt:
+        name: netplan.io
+        state: present
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Ensure /etc/netplan directory exists (Debian)
+      ansible.builtin.file:
+        path: /etc/netplan
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: >
+        ansible_facts['os_family'] == "Debian"
+
+    - name: Prepare | Deploy test netplan configuration (Debian)
+      ansible.builtin.copy:
+        dest: /etc/netplan/60-molecule.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              molecule0:
+                match:
+                  name: "molecule0"
+                addresses:
+                  - "192.0.2.20/24"
+                routes:
+                  - to: "default"
+                    via: "198.51.100.1"
+                  - to: "203.0.113.0/24"
+                    via: "192.0.2.1"
+        owner: root
+        group: root
+        mode: "0600"
+      when: >
+        ansible_facts['os_family'] == "Debian"

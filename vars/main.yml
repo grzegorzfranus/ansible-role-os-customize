@@ -10,6 +10,7 @@
 #   2. Banner and Login Script Paths
 #   3. Node.js Runtime (NodeSource)
 #   4. Systemd Service Drop-In Paths
+#   5. Netplan Configuration Paths
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -80,3 +81,14 @@ __os_customize_networkd_dropin_name: "60-ansible-os-customize.conf"
 
 # Root directory for systemd-networkd network configurations and drop-ins
 __os_customize_networkd_dropin_root: "/etc/systemd/network"
+
+# -----------------------------------------------------------------------------
+# 5. Netplan Configuration Paths
+# -----------------------------------------------------------------------------
+# Root directory for Netplan YAML configuration files
+__os_customize_netplan_config_dir: "/etc/netplan"
+
+# Netplan binary candidate paths
+__os_customize_netplan_binaries:
+  - "/usr/sbin/netplan"
+  - "/sbin/netplan"

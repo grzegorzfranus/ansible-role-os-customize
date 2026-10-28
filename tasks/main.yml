@@ -2,7 +2,7 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Main Entrypoint
 # =============================================================================
-# Flow: include_vars → assert → configure → bashrc → sysctl → networkd → nodejs
+# Flow: include_vars → assert → configure → bashrc → sysctl → networkd → netplan → nodejs
 # =============================================================================
 
 - name: OS Customize | main | Gather OS specific variables
@@ -82,6 +82,14 @@
     - os_customize_setup
     - os_customize_configure
     - os_customize_networkd
+
+- name: OS Customize | main | Run netplan configuration tasks
+  ansible.builtin.import_tasks: netplan.yml
+  tags:
+    - os_customize_setup
+    - os_customize_configure
+    - os_customize_networkd
+    - os_customize_netplan
 
 - name: OS Customize | main | Run Node.js runtime configuration tasks
   ansible.builtin.import_tasks: nodejs.yml
