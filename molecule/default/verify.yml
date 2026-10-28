@@ -398,6 +398,8 @@
       when: >
         _networkd_dummy0_configured | bool
 
+    # systemd 252 and older (Debian 12, Ubuntu 22.04) do not report NetworkFileDropins.
+    # The IPv6/IPv4 address assertion below covers those platforms.
     - name: Verify | Assert drop-in is listed in dummy0 NetworkFileDropins
       ansible.builtin.assert:
         that:
@@ -407,7 +409,8 @@
         fail_msg: "networkd drop-in is not listed in dummy0 NetworkFileDropins"
         success_msg: "networkd drop-in verified in dummy0 NetworkFileDropins"
       when: >
-        _networkd_dummy0_configured | bool
+        _networkd_dummy0_configured | bool and
+        'NetworkFileDropins' in (_dummy0_json_status_.stdout | from_json)
 
     - name: Verify | Query IPv6 addresses on dummy0
       ansible.builtin.command:
