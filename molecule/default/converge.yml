@@ -91,6 +91,9 @@
         os_customize_sysctl_settings:
           net.ipv4.ip_forward: "0"
           net.ipv4.conf.all.accept_redirects: "0"
+        os_customize_configure_networkd_ipv6_off: true
+        os_customize_networkd_interface: "dummy0"
+        os_customize_networkd_reconfigure: true
         os_customize_configure_nodejs: true
         os_customize_nodejs_major_version: "24"
         os_customize_nodejs_package_state: "present"

@@ -17,6 +17,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🖥️ **Virtual Machine Optimization**: Skip `fwupd-refresh.service` on virtual machines and containers via systemd drop-in
 - 🔒 **SSH Security**: Create a dedicated SSH users group for enhanced security and access control
 - ⚙️ **Kernel Parameters**: Manage sysctl parameters via dedicated drop-in files with automatic reloads
+- 🌐 **systemd-networkd IPv6 Off**: Turn IPv6 link-local addressing and router advertisements off on the uplink via systemd-networkd drop-in to prevent conflicts with sysctl disable_ipv6
 - 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
 - 📦 **Third-Party APT Repositories**: Configure generic third-party APT repositories as deb822 sources (`.sources`), download signing keys, and clean up legacy `.list` files on Debian-family systems
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
@@ -30,13 +31,15 @@ The role provides modular system customization tasks organized into functional a
    ├── [Assert Checks (tasks/assert.yml)]
    ├── [Configure Core OS (tasks/configure.yml)]
    ├── [Configure Shell (tasks/bashrc.yml)]
-   └── [Configure Kernel Parameters (tasks/sysctl.yml)]
+   ├── [Configure Kernel Parameters (tasks/sysctl.yml)]
+   └── [Configure systemd-networkd (tasks/networkd.yml)]
 ```
 
 - **Core OS Customization**: Timezone settings, security banner deployment, welcome message setup, and package updates.
 - **Access Group Setup**: Ensures a local SSH users group is present with a specific GID for policy enforcement.
 - **Shell Customization**: Appends standardized aliases, history settings, and shell prompts to global and user shell profiles.
 - **Kernel Parameter Customization**: Deploys managed sysctl settings via a drop-in file and reloads kernel parameters.
+- **systemd-networkd Customization**: Deploys an interface drop-in turning off IPv6 link-local addressing and router advertisements.
 
 ## 📋 Requirements
 
@@ -133,6 +136,9 @@ os_customize_apt_periodic_unattended_upgrade: "0"
 os_customize_configure_sysctl: false
 os_customize_sysctl_file: "/etc/sysctl.d/60-ansible-os-customize.conf"
 os_customize_sysctl_settings: {}
+os_customize_configure_networkd_ipv6_off: false
+os_customize_networkd_interface: ""
+os_customize_networkd_reconfigure: false
 ```
 
 ### Advanced Configuration
@@ -177,6 +183,24 @@ os_customize_sysctl_settings:
   net.ipv6.conf.lo.disable_ipv6: 0
 ```
 
+### systemd-networkd IPv6 Off
+
+`netplan` writes `LinkLocalAddressing=ipv6` by default into every `.network` file it generates for `systemd-networkd`. When a host disables IPv6 via sysctl (`net.ipv6.conf.all.disable_ipv6=1`, for example via `os_customize_sysctl_settings`), the two settings fight: `sysctl --system` (and the role reload handler) sets `disable_ipv6=1` across interfaces, while `systemd-networkd` re-enables IPv6 link-local addressing whenever it reconfigures the link. As a result, the link can stay stuck in `routable (configuring)` state and `systemd-networkd-wait-online.service` times out.
+
+Enabling `os_customize_configure_networkd_ipv6_off: true` deploys a drop-in file `60-ansible-os-customize.conf` under `/etc/systemd/network/<file>.network.d/` containing:
+
+```ini
+[Network]
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+```
+
+- **Interface and Network File Detection**: Target interface defaults to `os_customize_networkd_interface`, or the interface of the default IPv4 route (`ansible_facts['default_ipv4']['interface']`) when empty. The role checks `networkctl status --json=short <interface>` and inspects `NetworkFile`. If unmanaged or the file is missing/invalid, configuration is skipped with an informative debug message.
+- **Drop-In Application**: A networkd drop-in under `/etc/systemd/network/` applies to the main configuration even when that file resides in `/run/systemd/network/` (Netplan's output). Stale drop-ins from previously renamed network files are automatically removed.
+- **Reload vs. Reconfigure**: Default `false` writes or removes the drop-in only, and it applies at the next systemd-networkd start or boot. Setting `os_customize_networkd_reconfigure: true` (for canary hosts: `-e '{"os_customize_networkd_reconfigure": true}'`) applies the change now with `networkctl reload`, which reconfigures the links whose network file changed.
+- **Removal**: Setting `os_customize_configure_networkd_ipv6_off: false` removes any `60-ansible-os-customize.conf` drop-ins under `/etc/systemd/network/*.network.d/` and notifies the reload handler if `systemd-networkd` is active and `os_customize_networkd_reconfigure: true`.
+- **Inactive Service**: When `systemd-networkd` is not active on the host, configuration is skipped with a debug message without failing the run.
+
 ## 📊 Variables
 
 ### General Options
@@ -201,6 +225,9 @@ os_customize_sysctl_settings:
 | `os_customize_configure_sysctl` | Enable/disable management of kernel parameters through a sysctl drop-in | `false` |
 | `os_customize_sysctl_file` | Path of the managed sysctl drop-in file | `"/etc/sysctl.d/60-ansible-os-customize.conf"` |
 | `os_customize_sysctl_settings` | Mapping of kernel parameter to value, written in the given order | `{}` |
+| `os_customize_configure_networkd_ipv6_off` | Deploy a drop-in turning IPv6 link-local addressing and router advertisements off on the uplink | `false` |
+| `os_customize_networkd_interface` | Interface to configure (empty string resolves to the default IPv4 route interface) | `""` |
+| `os_customize_networkd_reconfigure` | Apply the change now with `networkctl reload`, which reconfigures the links whose network file changed (default false applies at next start or boot) | `false` |
 
 ### Node.js, npm and Corepack Options
 
@@ -341,6 +368,16 @@ cat /etc/sysctl.d/60-ansible-os-customize.conf
 sysctl net.ipv4.ip_forward
 ```
 
+### Verify systemd-networkd IPv6 Off Configuration
+
+```bash
+# Check interface status and active drop-in files
+networkctl status eth0
+
+# View network configuration file and active drop-ins
+networkctl cat 10-netplan-eth0.network
+```
+
 ### Verify Node.js, npm and Corepack
 
 ```bash
@@ -449,6 +486,7 @@ ansible-role-os-customize/
 │   ├── apt_repositories.yml # Third-party APT repositories configuration
 │   ├── bashrc.yml           # .bashrc configuration
 │   ├── sysctl.yml           # Kernel parameters configuration
+│   ├── networkd.yml         # systemd-networkd IPv6-off drop-in configuration
 │   ├── nodejs.yml           # Node.js OS family dispatcher
 │   ├── nodejs_debian.yml    # NodeSource APT repository and runtime install
 │   ├── nodejs_redhat.yml    # NodeSource yum repository and runtime install
@@ -459,9 +497,12 @@ ansible-role-os-customize/
 │   ├── sysctl.conf.j2       # Kernel parameters drop-in configuration
 │   ├── apt/
 │   │   └── nodesource-preferences.j2  # APT pin for the NodeSource origin
-│   └── scripts/
-│       ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
-│       └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
+│   ├── scripts/
+│   │   ├── login_debian.sh.j2  # Debian/Ubuntu login welcome script
+│   │   └── login_redhat.sh.j2  # RHEL/Rocky login welcome script
+│   └── systemd/
+│       ├── fwupd-refresh-virtualization.conf.j2  # fwupd-refresh virtualization drop-in
+│       └── networkd-ipv6-off.conf.j2            # systemd-networkd IPv6-off drop-in
 ├── vars/
 │   └── main.yml             # Internal (non-overridable) variables
 └── requirements.yml         # External collection dependencies (community.general)
@@ -480,6 +521,7 @@ All tags (except `always`) are prefixed with `os_customize_` to avoid collisions
 | `os_customize_apt_repositories` | Third-party APT repository configuration tasks |
 | `os_customize_bashrc` | Shell environment (`.bashrc`) configuration tasks |
 | `os_customize_sysctl` | Kernel parameter drop-in configuration tasks |
+| `os_customize_networkd` | systemd-networkd IPv6-off drop-in configuration tasks |
 | `os_customize_nodejs` | Node.js runtime, npm and Corepack configuration tasks |
 
 ## CI/CD Pipeline

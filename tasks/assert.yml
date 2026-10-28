@@ -211,7 +211,37 @@
     os_customize_configure_sysctl | bool
 
 # -----------------------------------------------------------------------------
-# 10. Node.js Runtime (NodeSource)
+# 10. systemd-networkd IPv6 Off
+# -----------------------------------------------------------------------------
+# Validates systemd-networkd IPv6-off drop-in configuration flags and interface name.
+
+- name: OS Customize | assert | Validate systemd-networkd IPv6-off configuration flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_networkd_ipv6_off is defined
+      - os_customize_configure_networkd_ipv6_off is boolean
+    fail_msg: "os_customize_configure_networkd_ipv6_off must be a boolean (true/false)"
+    success_msg: "systemd-networkd IPv6-off flag validated: {{ os_customize_configure_networkd_ipv6_off }}"
+
+- name: OS Customize | assert | Validate systemd-networkd interface name
+  ansible.builtin.assert:
+    that:
+      - os_customize_networkd_interface is defined
+      - os_customize_networkd_interface is string
+      - os_customize_networkd_interface | length == 0 or os_customize_networkd_interface is match('^[A-Za-z0-9_.:@-]{1,15}$')
+    fail_msg: "os_customize_networkd_interface must be a string matching '^[A-Za-z0-9_.:@-]{1,15}$' or empty"
+    success_msg: "systemd-networkd interface validated: {{ os_customize_networkd_interface | default('default route interface', true) }}"
+
+- name: OS Customize | assert | Validate systemd-networkd reconfigure flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_networkd_reconfigure is defined
+      - os_customize_networkd_reconfigure is boolean
+    fail_msg: "os_customize_networkd_reconfigure must be a boolean (true/false)"
+    success_msg: "systemd-networkd reconfigure flag validated: {{ os_customize_networkd_reconfigure }}"
+
+# -----------------------------------------------------------------------------
+# 11. Node.js Runtime (NodeSource)
 # -----------------------------------------------------------------------------
 # Validates the Node.js configuration flag, release line, package state, repository
 # endpoints, APT pin settings and cross-field consistency with additional packages.
@@ -299,7 +329,7 @@
     - os_customize_configure_additional_packages | bool
 
 # -----------------------------------------------------------------------------
-# 11. npm Package Manager
+# 12. npm Package Manager
 # -----------------------------------------------------------------------------
 # Validates the npm configuration flag, requested npm version and global package list.
 
@@ -340,7 +370,7 @@
   when: os_customize_configure_npm | bool
 
 # -----------------------------------------------------------------------------
-# 12. Corepack Package Managers (Yarn, pnpm)
+# 13. Corepack Package Managers (Yarn, pnpm)
 # -----------------------------------------------------------------------------
 # Validates the Corepack configuration flag, its Node.js prerequisites and the
 # list of package managers activated through Corepack.
@@ -384,7 +414,7 @@
   when: os_customize_configure_corepack | bool
 
 # -----------------------------------------------------------------------------
-# 13. Third-Party APT Repositories (Debian family)
+# 14. Third-Party APT Repositories (Debian family)
 # -----------------------------------------------------------------------------
 # Validates third-party APT repository definitions, URLs, keyring paths,
 # legacy cleanup files, and OS family compatibility.

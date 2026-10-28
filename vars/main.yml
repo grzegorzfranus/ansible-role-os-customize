@@ -74,3 +74,9 @@ __os_customize_corepack_unsupported_major_version: 25
 # -----------------------------------------------------------------------------
 # Path to the fwupd-refresh systemd drop-in file (identical across all supported distributions)
 __os_customize_fwupd_refresh_dropin_path: "/etc/systemd/system/fwupd-refresh.service.d/60-ansible-os-customize.conf"
+
+# Name of the systemd-networkd drop-in configuration file
+__os_customize_networkd_dropin_name: "60-ansible-os-customize.conf"
+
+# Root directory for systemd-networkd network configurations and drop-ins
+__os_customize_networkd_dropin_root: "/etc/systemd/network"

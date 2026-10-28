@@ -2,8 +2,8 @@
 # =============================================================================
 # Ansible Role: OS Customize - Handlers
 # =============================================================================
-# Handlers for kernel parameter reload, systemd daemon-reload, and systemd service
-# state reset for the OS Customize role.
+# Handlers for kernel parameter reload, systemd daemon-reload, systemd service
+# state reset, and systemd-networkd reload for the OS Customize role.
 # =============================================================================
 
 # Justification: Reload kernel parameters using 'sysctl --system' across all
@@ -27,3 +27,15 @@
     cmd: systemctl reset-failed fwupd-refresh.service
   changed_when: true
   failed_when: false
+
+# Justification: Reload systemd-networkd configuration using 'networkctl reload',
+# which has no dedicated Ansible module; in systemd 259 a reload reconfigures the
+# links whose network file or drop-in changed.
+- name: OS Customize | handlers | Reload systemd-networkd configuration
+  become: true
+  ansible.builtin.command:
+    cmd: networkctl reload
+  changed_when: true
+  when: >
+    __os_customize_networkd_active | default(false) | bool and
+    os_customize_networkd_reconfigure | bool
