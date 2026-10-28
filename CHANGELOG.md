@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.4.0...v2.5.0) (2026-10-28)
+
+
+### Features
+
+* mark the netplan default route on-link ([#54](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/54)) ([#55](https://github.com/grzegorzfranus/ansible-role-os-customize/issues/55)) ([a145e06](https://github.com/grzegorzfranus/ansible-role-os-customize/commit/a145e061fa52c7b4a0be7852703c26f2d154618c))
+
 ## [2.4.0](https://github.com/grzegorzfranus/ansible-role-os-customize/compare/v2.3.0...v2.4.0) (2026-10-28)
 
 
