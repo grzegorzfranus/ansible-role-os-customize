@@ -106,3 +106,7 @@
         os_customize_corepack_packages:
           - name: "yarn"
             version: "stable"
+        os_customize_configure_tmp_on_disk: true
+        os_customize_tmp_max_age: "3d"
+        os_customize_tmp_exclude_paths:
+          - "/tmp/renovate"

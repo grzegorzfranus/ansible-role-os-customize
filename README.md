@@ -21,6 +21,7 @@ This Ansible role customizes basic Linux OS settings, including login banners, w
 - 🌐 **Netplan Default Route On-Link**: Set `on-link: true` on IPv4 default routes across `/etc/netplan/*.yaml` to prevent gateway unreachable routing errors on providers that route subnet neighbours through the gateway (e.g. Contabo)
 - 🟢 **Node.js Runtime**: Install a current Node.js release from the official NodeSource repositories, with optional npm management and Corepack-activated package managers such as Yarn
 - 📦 **Third-Party APT Repositories**: Configure generic third-party APT repositories as deb822 sources (`.sources`), download signing keys, and clean up legacy `.list` files on Debian-family systems
+- 🧹 **/tmp on Disk**: Mask `tmp.mount` so `/tmp` stays on the root filesystem instead of tmpfs, with age-based cleanup via `/etc/tmpfiles.d/tmp.conf`
 - 🧪 **Variable Validation**: Robust dual-layer variable validation (`meta/argument_specs.yml` & `tasks/assert.yml`) and OS-specific configuration handling (including `lastlog2` support on Ubuntu 26)
 
 ## 🎯 Architecture
@@ -143,6 +144,9 @@ os_customize_configure_networkd_ipv6_off: false
 os_customize_networkd_interface: ""
 os_customize_networkd_reconfigure: false
 os_customize_configure_netplan_default_route_onlink: false
+os_customize_configure_tmp_on_disk: false
+os_customize_tmp_max_age: "3d"
+os_customize_tmp_exclude_paths: []
 ```
 
 ### Advanced Configuration
@@ -226,6 +230,14 @@ routes:
 - **No Netplan**: When Netplan is not installed on the host, configuration is skipped with a debug message without failing the run.
 - **Check Mode**: Supported; file diffs and potential modifications are previewed without writing to `/etc/netplan/`.
 
+### /tmp on Disk
+
+Ubuntu and Debian 13 mount `/tmp` as a `tmpfs` by default. Because `tmpfs` pages cannot be reclaimed without swap, small hosts can run out of memory when tools write large temporary files. Enabling `os_customize_configure_tmp_on_disk: true` masks `tmp.mount` (`/etc/systemd/system/tmp.mount` -> `/dev/null`) and deploys `/etc/tmpfiles.d/tmp.conf` for age-based cleanup, carrying over any entries from `/usr/lib/tmpfiles.d/tmp.conf` for other paths (such as `/var/tmp`) unchanged.
+
+- **Takes Effect at Next Boot**: Enabling the feature only takes effect after the next reboot (or after stopping everything that uses `/tmp`, unmounting it, and starting the services again).
+- **Cleanup**: Files below `/tmp` are removed after `os_customize_tmp_max_age` and at every boot. Paths listed in `os_customize_tmp_exclude_paths` are skipped by the age-based cleanup (`x <path>`), though they are still emptied at boot together with the rest of `/tmp`.
+- **Disk Space**: Because `/tmp` files live on the root filesystem, the disk must have enough room for them.
+
 ## 📊 Variables
 
 ### General Options
@@ -254,6 +266,9 @@ routes:
 | `os_customize_networkd_interface` | Interface to configure (empty string resolves to the default IPv4 route interface) | `""` |
 | `os_customize_networkd_reconfigure` | Apply changes now with `networkctl reload` (after `netplan generate`), reconfiguring links whose network file changed (default false applies at next start or boot) | `false` |
 | `os_customize_configure_netplan_default_route_onlink` | Set `on-link: true` on every IPv4 default route in `/etc/netplan/*.yaml` (turning off later does not remove the flag) | `false` |
+| `os_customize_configure_tmp_on_disk` | Mask `tmp.mount` so `/tmp` stays on the root filesystem from the next boot | `false` |
+| `os_customize_tmp_max_age` | Age after which `systemd-tmpfiles-clean.timer` removes files below `/tmp` | `"3d"` |
+| `os_customize_tmp_exclude_paths` | Absolute paths below `/tmp` skipped by age-based cleanup | `[]` |
 
 ### Node.js, npm and Corepack Options
 
@@ -533,10 +548,12 @@ ansible-role-os-customize/
 │   ├── nodejs_debian.yml    # NodeSource APT repository and runtime install
 │   ├── nodejs_redhat.yml    # NodeSource yum repository and runtime install
 │   ├── nodejs_npm.yml       # Global npm version and packages
-│   └── nodejs_corepack.yml  # Corepack shims and package manager activation
+│   ├── nodejs_corepack.yml  # Corepack shims and package manager activation
+│   └── tmp.yml              # /tmp on disk (mask tmp.mount and tmpfiles.d)
 ├── templates/
 │   ├── banner.j2            # Login banner with security warning
 │   ├── sysctl.conf.j2       # Kernel parameters drop-in configuration
+│   ├── tmp.conf.j2          # /tmp tmpfiles.d configuration
 │   ├── apt/
 │   │   └── nodesource-preferences.j2  # APT pin for the NodeSource origin
 │   ├── scripts/
@@ -566,6 +583,7 @@ All tags (except `always`) are prefixed with `os_customize_` to avoid collisions
 | `os_customize_networkd` | systemd-networkd IPv6-off drop-in and Netplan default route on-link configuration tasks |
 | `os_customize_netplan` | Netplan default route on-link configuration tasks (also executed by `os_customize_networkd`) |
 | `os_customize_nodejs` | Node.js runtime, npm and Corepack configuration tasks |
+| `os_customize_tmp` | `/tmp` on disk configuration tasks (`tmp.mount` mask and `/etc/tmpfiles.d/tmp.conf`) |
 
 ## CI/CD Pipeline
 

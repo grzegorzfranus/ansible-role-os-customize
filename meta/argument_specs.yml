@@ -284,3 +284,19 @@ argument_specs:
               - present
               - absent
             description: "Desired repository state ('present' or 'absent')."
+
+      os_customize_configure_tmp_on_disk:
+        type: bool
+        default: false
+        description: "Mask tmp.mount so /tmp stays on the root filesystem from the next boot instead of tmpfs."
+
+      os_customize_tmp_max_age:
+        type: str
+        default: "3d"
+        description: "Age after which systemd-tmpfiles-clean.timer removes files below /tmp."
+
+      os_customize_tmp_exclude_paths:
+        type: list
+        elements: str
+        default: []
+        description: "Absolute paths below /tmp skipped by age-based cleanup (rendered as tmpfiles.d 'x' lines)."

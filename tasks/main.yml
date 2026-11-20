@@ -2,7 +2,7 @@
 # =============================================================================
 # Ansible Role: OS Customize - Tasks: Main Entrypoint
 # =============================================================================
-# Flow: include_vars → assert → configure → bashrc → sysctl → networkd → netplan → nodejs
+# Flow: include_vars → assert → configure → bashrc → sysctl → networkd → netplan → nodejs → tmp
 # =============================================================================
 
 - name: OS Customize | main | Gather OS specific variables
@@ -99,3 +99,12 @@
     - os_customize_setup
     - os_customize_configure
     - os_customize_nodejs
+
+- name: OS Customize | main | Run /tmp on disk configuration tasks
+  ansible.builtin.import_tasks: tmp.yml
+  when: >
+    os_customize_configure_tmp_on_disk | bool
+  tags:
+    - os_customize_setup
+    - os_customize_configure
+    - os_customize_tmp

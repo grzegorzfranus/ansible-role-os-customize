@@ -512,3 +512,41 @@
     fail_msg: "the role writes deb822 sources only on the Debian family"
     success_msg: "Third-party APT repositories OS family validated: Debian"
   when: os_customize_apt_repositories | length > 0
+
+# -----------------------------------------------------------------------------
+# 16. /tmp on Disk
+# -----------------------------------------------------------------------------
+# Validates /tmp on disk configuration flag, max age, and exclude paths.
+
+- name: OS Customize | assert | Validate /tmp on disk configuration flag
+  ansible.builtin.assert:
+    that:
+      - os_customize_configure_tmp_on_disk is defined
+      - os_customize_configure_tmp_on_disk is boolean
+    fail_msg: "os_customize_configure_tmp_on_disk must be a boolean (true/false)"
+    success_msg: "/tmp on disk configuration flag validated: {{ os_customize_configure_tmp_on_disk }}"
+
+- name: OS Customize | assert | Validate /tmp on disk max age
+  ansible.builtin.assert:
+    that:
+      - os_customize_tmp_max_age is defined
+      - os_customize_tmp_max_age is string
+      - os_customize_tmp_max_age is match('^[1-9][0-9]*(s|m|h|d|w)$')
+    fail_msg: "os_customize_tmp_max_age must be a systemd time span matching '^[1-9][0-9]*(s|m|h|d|w)$' (e.g., '3d', '12h')"
+    success_msg: "/tmp on disk max age validated: {{ os_customize_tmp_max_age }}"
+  when: >
+    os_customize_configure_tmp_on_disk | bool
+
+- name: OS Customize | assert | Validate /tmp on disk exclude paths
+  ansible.builtin.assert:
+    that:
+      - os_customize_tmp_exclude_paths is defined
+      - os_customize_tmp_exclude_paths is sequence
+      - os_customize_tmp_exclude_paths is not string
+      - os_customize_tmp_exclude_paths is not mapping
+      - os_customize_tmp_exclude_paths | reject('string') | list | length == 0
+      - os_customize_tmp_exclude_paths | select('string') | reject('match', '^/tmp/') | list | length == 0
+    fail_msg: "os_customize_tmp_exclude_paths must be a list of strings starting with '/tmp/'"
+    success_msg: "/tmp on disk exclude paths validated: {{ os_customize_tmp_exclude_paths | length }} entries"
+  when: >
+    os_customize_configure_tmp_on_disk | bool
