@@ -29,6 +29,7 @@
 #   13. npm Package Manager
 #   14. Corepack Package Managers (Yarn, pnpm)
 #   15. Third-Party APT Repositories (Debian family)
+#   16. /tmp on Disk
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -255,3 +256,25 @@ os_customize_corepack_packages:
 #     legacy_files: ["/etc/apt/sources.list.d/github-cli.list"]
 # Valid values: list of mappings
 os_customize_apt_repositories: []
+
+# -----------------------------------------------------------------------------
+# 16. /tmp on Disk
+# -----------------------------------------------------------------------------
+# Mask tmp.mount so /tmp stays on the root filesystem from the next boot instead of
+# mounting a tmpfs. tmpfs pages cannot be reclaimed without swap, which is why small
+# hosts run out of memory. The role never unmounts /tmp or reboots; the change takes
+# effect at the next boot. Entries in /usr/lib/tmpfiles.d/tmp.conf for other paths
+# (such as /var/tmp) are carried over unchanged into /etc/tmpfiles.d/tmp.conf.
+# Valid values: true, false
+os_customize_configure_tmp_on_disk: false
+
+# Age after which systemd-tmpfiles-clean.timer removes files below /tmp
+# Valid values: systemd time span such as 12h, 3d, 1w; integer plus unit s, m, h, d or w
+os_customize_tmp_max_age: "3d"
+
+# Paths below /tmp whose contents are skipped by age-based cleanup (rendered as
+# tmpfiles.d 'x' lines), for caches that a long-lived tool expects to stay intact,
+# for example a Renovate cache. The paths are still emptied at boot together with
+# the rest of /tmp.
+# Valid values: list of absolute paths below /tmp
+os_customize_tmp_exclude_paths: []

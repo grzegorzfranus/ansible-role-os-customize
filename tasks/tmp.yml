@@ -1,0 +1,53 @@
+---
+# =============================================================================
+# Ansible Role: OS Customize - Tasks: /tmp on Disk
+# =============================================================================
+# Masks tmp.mount so /tmp stays on the root filesystem from the next boot, and
+# deploys /etc/tmpfiles.d/tmp.conf for age-based cleanup, carrying over any
+# vendor /usr/lib/tmpfiles.d/tmp.conf entries for other paths (such as /var/tmp)
+# unchanged.
+# =============================================================================
+
+- name: OS Customize | tmp | Mask tmp.mount unit
+  become: true
+  ansible.builtin.file:
+    src: /dev/null
+    path: /etc/systemd/system/tmp.mount
+    state: link
+    force: true
+
+- name: OS Customize | tmp | Check if vendor tmp.conf exists
+  become: true
+  ansible.builtin.stat:
+    path: /usr/lib/tmpfiles.d/tmp.conf
+  register: __os_customize_tmp_vendor_stat
+
+- name: OS Customize | tmp | Read vendor tmp.conf
+  become: true
+  ansible.builtin.slurp:
+    src: /usr/lib/tmpfiles.d/tmp.conf
+  register: __os_customize_tmp_vendor_slurp
+  when: __os_customize_tmp_vendor_stat.stat.exists
+
+- name: OS Customize | tmp | Filter vendor tmp.conf lines to keep
+  ansible.builtin.set_fact:
+    __os_customize_tmp_vendor_lines: >-
+      {%- set lines = [] -%}
+      {%- if __os_customize_tmp_vendor_stat.stat.exists -%}
+        {%- for line in (__os_customize_tmp_vendor_slurp.content | b64decode).splitlines() -%}
+          {%- set stripped = line | trim -%}
+          {%- if stripped | length > 0 and not stripped.startswith('#') and line.split()[1:2] != ['/tmp'] -%}
+            {%- set _ = lines.append(line) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ lines }}
+
+- name: OS Customize | tmp | Deploy tmpfiles.d configuration for /tmp
+  become: true
+  ansible.builtin.template:
+    src: tmp.conf.j2
+    dest: /etc/tmpfiles.d/tmp.conf
+    owner: root
+    group: root
+    mode: "0644"

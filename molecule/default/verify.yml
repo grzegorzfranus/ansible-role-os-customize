@@ -16,6 +16,7 @@
 # - Netplan default route on-link
 # - Third-party APT repositories
 # - Node.js runtime, npm and Corepack package managers
+# - /tmp on disk (masked tmp.mount and /etc/tmpfiles.d/tmp.conf)
 #
 # Flow:
 # 1. Load variables and gather facts
@@ -31,7 +32,8 @@
 # 11. Verify netplan default route on-link
 # 12. Verify third-party APT repositories
 # 13. Verify Node.js, npm and Corepack
-# 14. Final summary
+# 14. Verify /tmp on disk
+# 15. Final summary
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -750,7 +752,97 @@
         success_msg: "Yarn verified through Corepack: {{ _yarn_version_.stdout }}"
 
 # -----------------------------------------------------------------------------
-# 14. Final Summary
+# 14. /tmp on Disk Verification
+# -----------------------------------------------------------------------------
+    - name: Verify | Stat /etc/systemd/system/tmp.mount
+      ansible.builtin.stat:
+        path: /etc/systemd/system/tmp.mount
+      register: _tmp_mount_unit_
+
+    - name: Verify | Assert /etc/systemd/system/tmp.mount is a symlink to /dev/null
+      ansible.builtin.assert:
+        that:
+          - _tmp_mount_unit_.stat.exists
+          - _tmp_mount_unit_.stat.islnk
+          - _tmp_mount_unit_.stat.lnk_target == "/dev/null"
+        fail_msg: "/etc/systemd/system/tmp.mount is not a symlink to /dev/null"
+        success_msg: "/etc/systemd/system/tmp.mount verified as symlink to /dev/null"
+
+    - name: Verify | Stat /etc/tmpfiles.d/tmp.conf
+      ansible.builtin.stat:
+        path: /etc/tmpfiles.d/tmp.conf
+      register: _tmpfiles_tmp_conf_
+
+    - name: Verify | Assert /etc/tmpfiles.d/tmp.conf exists with mode 0644
+      ansible.builtin.assert:
+        that:
+          - _tmpfiles_tmp_conf_.stat.exists
+          - _tmpfiles_tmp_conf_.stat.mode == "0644"
+        fail_msg: "/etc/tmpfiles.d/tmp.conf does not exist or has incorrect mode"
+        success_msg: "/etc/tmpfiles.d/tmp.conf verified with mode 0644"
+
+    - name: Verify | Read /etc/tmpfiles.d/tmp.conf content
+      ansible.builtin.slurp:
+        src: /etc/tmpfiles.d/tmp.conf
+      register: _tmpfiles_tmp_conf_content_
+
+    - name: Verify | Assert /etc/tmpfiles.d/tmp.conf contains expected /tmp and exclude lines
+      ansible.builtin.assert:
+        that:
+          - "'D /tmp 1777 root root 3d' in (_tmpfiles_tmp_conf_content_.content | b64decode).splitlines()"
+          - "'x /tmp/renovate' in (_tmpfiles_tmp_conf_content_.content | b64decode).splitlines()"
+        fail_msg: "/etc/tmpfiles.d/tmp.conf does not contain expected lines"
+        success_msg: "/etc/tmpfiles.d/tmp.conf verified with D /tmp 1777 root root 3d and x /tmp/renovate"
+
+    - name: Verify | Check if vendor /usr/lib/tmpfiles.d/tmp.conf exists
+      ansible.builtin.stat:
+        path: /usr/lib/tmpfiles.d/tmp.conf
+      register: _tmpfiles_vendor_conf_
+
+    - name: Verify | Read vendor /usr/lib/tmpfiles.d/tmp.conf content
+      ansible.builtin.slurp:
+        src: /usr/lib/tmpfiles.d/tmp.conf
+      register: _tmpfiles_vendor_conf_content_
+      when: _tmpfiles_vendor_conf_.stat.exists
+
+    - name: Verify | Collect kept vendor lines and /etc/tmpfiles.d/tmp.conf /tmp lines
+      ansible.builtin.set_fact:
+        _tmpfiles_vendor_kept_lines_: >-
+          {%- set lines = [] -%}
+          {%- if _tmpfiles_vendor_conf_.stat.exists -%}
+            {%- for line in (_tmpfiles_vendor_conf_content_.content | b64decode).splitlines() -%}
+              {%- set stripped = line | trim -%}
+              {%- if stripped | length > 0 and not stripped.startswith('#') and line.split()[1:2] != ['/tmp'] -%}
+                {%- set _ = lines.append(line) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+          {{ lines }}
+        _tmpfiles_etc_tmp_lines_: >-
+          {%- set lines = [] -%}
+          {%- for line in (_tmpfiles_tmp_conf_content_.content | b64decode).splitlines() -%}
+            {%- set stripped = line | trim -%}
+            {%- if stripped | length > 0 and not stripped.startswith('#') and line.split()[1:2] == ['/tmp'] -%}
+              {%- set _ = lines.append(line) -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ lines }}
+
+    - name: Verify | Assert vendor non-/tmp lines are carried over and no unexpected /tmp lines exist
+      ansible.builtin.assert:
+        that:
+          - (_tmpfiles_vendor_kept_lines_ | difference((_tmpfiles_tmp_conf_content_.content | b64decode).splitlines())) | length == 0
+          - (_tmpfiles_etc_tmp_lines_ | reject('equalto', 'D /tmp 1777 root root 3d') | list) | length == 0
+        fail_msg: >-
+          /etc/tmpfiles.d/tmp.conf vendor carry-over or /tmp line check failed
+          (missing vendor lines: {{ _tmpfiles_vendor_kept_lines_ | difference((_tmpfiles_tmp_conf_content_.content | b64decode).splitlines()) }},
+          /tmp lines: {{ _tmpfiles_etc_tmp_lines_ }})
+        success_msg: >-
+          /etc/tmpfiles.d/tmp.conf verified with all vendor non-/tmp lines carried over
+          and no unexpected /tmp lines
+
+# -----------------------------------------------------------------------------
+# 15. Final Summary
 # -----------------------------------------------------------------------------
     - name: Verify | Show verification results
       ansible.builtin.debug:
@@ -772,4 +864,5 @@
           - "Netplan: Default route on-link verified (where netplan exists)"
           - "APT repositories: github-cli deb822 source and keyring verified (Debian)"
           - "Node.js: Runtime, npm and Corepack verified"
+          - "/tmp on disk: tmp.mount masked and /etc/tmpfiles.d/tmp.conf verified"
           - "OS Customize role verification: PASSED"
